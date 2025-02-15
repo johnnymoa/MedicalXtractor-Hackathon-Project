@@ -27,7 +27,7 @@ app = Flask(__name__, static_url_path='/static')
 CORS(app)
 
 # Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///documents.db'
+app.config['SQLALCHEMY_DATABASE_URI'] =  os.getenv("DATABASE_URL")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
