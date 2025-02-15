@@ -1,0 +1,13 @@
+Flask==3.1.0
+Flask-Cors==5.0.0
+openai==1.61.0
+python-dotenv==1.0.1
+mistralai
+PyPDF2==3.0.1
+SQLAlchemy==2.0.27
+Flask-SQLAlchemy==3.1.1
+PyMuPDF==1.23.26
+Pillow>=11.0.0
+python-dateutil
+pytz
+smolagents
