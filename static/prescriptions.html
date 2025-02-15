@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEAM10X - Prescription Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c5282;
+            --secondary-color: #4299e1;
+            --accent-color: #ebf8ff;
+            --text-color: #2d3748;
+            --light-text: #718096;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f7fafc;
+            color: var(--text-color);
+            padding-bottom: 60px;
+        }
+
+        .navbar {
+            background-color: var(--primary-color);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar h1 {
+            color: white;
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .navbar a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .navbar a:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            background-color: var(--accent-color);
+            border-bottom: 1px solid #e2e8f0;
+            padding: 1rem;
+        }
+
+        .document-item {
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .document-item:hover {
+            border-color: var(--secondary-color);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .document-item button {
+            margin-left: 10px;
+        }
+
+        .document-item.analyzed {
+            border-left: 4px solid var(--secondary-color);
+        }
+
+        .btn-refresh {
+            background-color: var(--accent-color);
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+
+        .btn-refresh:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .table th {
+            cursor: pointer;
+            position: relative;
+            background-color: var(--accent-color);
+        }
+
+        .table th:hover {
+            background-color: #e2e8f0;
+        }
+
+        .sort-icon {
+            margin-left: 5px;
+        }
+
+        .filter-row {
+            background-color: #f8fafc;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+        }
+
+        .status-active {
+            color: #38a169;
+            font-weight: bold;
+        }
+
+        .status-inactive {
+            color: #e53e3e;
+        }
+
+        .btn-filter {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            margin: 0 0.5rem;
+        }
+
+        .btn-filter:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-filter.active {
+            background-color: var(--primary-color);
+        }
+
+        .search-box {
+            max-width: 300px;
+        }
+
+        .footer {
+            background-color: var(--primary-color);
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--secondary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <h1>Prescription Manager</h1>
+        <a href="/static/index.html">Back to Dashboard</a>
+    </nav>
+
+    <div class="container">
+        <!-- Documents List -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">Medical Documents</h2>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <button class="btn btn-primary" onclick="viewAllPrescriptions()">View All Prescriptions</button>
+                </div>
+                <div id="documentsList">
+                    <!-- Documents will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Prescriptions View -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="mb-0">Prescriptions</h2>
+            </div>
+            <div class="card-body">
+                <div class="filter-row">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-filter active" data-filter="all">All</button>
+                                <button type="button" class="btn btn-filter" data-filter="active">Active</button>
+                                <button type="button" class="btn btn-filter" data-filter="inactive">Inactive</button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="text" class="form-control search-box float-md-end" placeholder="Search medications...">
+                        </div>
+                    </div>
+                </div>
+                <div class="loader" id="loader"></div>
+                <div class="table-responsive">
+                    <table class="table table-hover" id="prescriptionsTable">
+                        <thead>
+                            <tr>
+                                <th data-sort="name">Medication Name <i class="fas fa-sort"></i></th>
+                                <th data-sort="dosage">Dosage <i class="fas fa-sort"></i></th>
+                                <th data-sort="frequency">Frequency <i class="fas fa-sort"></i></th>
+                                <th data-sort="startDate">Start Date <i class="fas fa-sort"></i></th>
+                                <th data-sort="endDate">End Date <i class="fas fa-sort"></i></th>
+                                <th data-sort="status">Status <i class="fas fa-sort"></i></th>
+                                <th>Instructions</th>
+                                <th>Source Document</th>
+                                <th data-sort="page">Page <i class="fas fa-sort"></i></th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="prescriptionsTableBody">
+                            <!-- Prescriptions will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>&copy; 2025 TEAM10X. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let prescriptionsData = [];
+        let currentSort = { column: null, direction: 'asc' };
+        let currentFilter = 'all';
+        let currentDocumentId = null;
+        
+        // Load documents when page loads
+        document.addEventListener('DOMContentLoaded', loadDocuments);
+
+        function loadDocuments() {
+            fetch('/api/documents')
+                .then(response => response.json())
+                .then(documents => {
+                    const documentsList = document.getElementById('documentsList');
+                    if (documents.length === 0) {
+                        documentsList.innerHTML = '<p>No documents uploaded yet.</p>';
+                        return;
+                    }
+
+                    let html = '';
+                    documents.forEach(doc => {
+                        const uploadDate = new Date(doc.upload_date).toLocaleString();
+                        html += `
+                            <div class="document-item" id="doc-${doc.id}">
+                                <div>
+                                    <strong>${doc.filename}</strong>
+                                    <br>
+                                    <small>Uploaded: ${uploadDate} - ${doc.total_pages} pages</small>
+                                </div>
+                                <div class="button-group">
+                                    <button class="btn btn-primary view-btn" style="display: none;" onclick="viewPrescriptions(${doc.id})">View Prescriptions</button>
+                                    <button class="btn btn-success generate-btn" onclick="generatePrescriptions(${doc.id})">Generate Prescriptions</button>
+                                    <button class="btn btn-refresh refresh-btn" style="display: none;" onclick="refreshPrescriptions(${doc.id})">
+                                        <i class="fas fa-sync-alt"></i> Refresh Analysis
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    documentsList.innerHTML = html;
+                    
+                    // Check which documents have prescriptions
+                    documents.forEach(doc => {
+                        checkPrescriptionStatus(doc.id);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading documents:', error);
+                    document.getElementById('documentsList').innerHTML = 
+                        '<p style="color: red">Error loading documents.</p>';
+                });
+        }
+
+        async function checkPrescriptionStatus(docId) {
+            try {
+                const response = await fetch(`/api/analyze-prescription/${docId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                const docElement = document.getElementById(`doc-${docId}`);
+                const viewBtn = docElement.querySelector('.view-btn');
+                const generateBtn = docElement.querySelector('.generate-btn');
+                const refreshBtn = docElement.querySelector('.refresh-btn');
+                
+                if (!data.error && data.medications) {
+                    viewBtn.style.display = 'inline-block';
+                    refreshBtn.style.display = 'inline-block';
+                    generateBtn.style.display = 'none';
+                    docElement.classList.add('analyzed');
+                } else {
+                    viewBtn.style.display = 'none';
+                    refreshBtn.style.display = 'none';
+                    generateBtn.style.display = 'inline-block';
+                    docElement.classList.remove('analyzed');
+                }
+            } catch (error) {
+                console.error('Error checking prescription status:', error);
+            }
+        }
+
+        async function generatePrescriptions(docId) {
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+            
+            try {
+                const response = await fetch(`/api/analyze-prescription/${docId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Update button visibility
+                const docElement = document.getElementById(`doc-${docId}`);
+                const viewBtn = docElement.querySelector('.view-btn');
+                const generateBtn = docElement.querySelector('.generate-btn');
+                const refreshBtn = docElement.querySelector('.refresh-btn');
+                
+                viewBtn.style.display = 'inline-block';
+                refreshBtn.style.display = 'inline-block';
+                generateBtn.style.display = 'none';
+                docElement.classList.add('analyzed');
+
+                // Get document info and update prescriptions table
+                await viewPrescriptions(docId);
+                
+            } catch (error) {
+                console.error('Error generating prescriptions:', error);
+                alert(`Error generating prescriptions: ${error.message}`);
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        async function viewAllPrescriptions() {
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+            
+            try {
+                // Get all documents
+                const documentsResponse = await fetch('/api/documents');
+                const documents = await documentsResponse.json();
+                
+                // Clear existing prescriptions
+                prescriptionsData = [];
+                
+                // Fetch prescriptions for each document
+                for (const doc of documents) {
+                    try {
+                        const response = await fetch(`/api/analyze-prescription/${doc.id}`, {
+                            method: 'POST'
+                        });
+                        const data = await response.json();
+                        
+                        if (!data.error && data.medications) {
+                            // Add document info to medications
+                            data.medications.forEach(med => {
+                                med.documentId = doc.id;
+                                med.documentName = doc.filename;
+                            });
+                            
+                            // Add to combined prescriptions data
+                            prescriptionsData.push(...data.medications);
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching prescriptions for document ${doc.id}:`, error);
+                    }
+                }
+                
+                updateTable();
+                
+            } catch (error) {
+                console.error('Error viewing all prescriptions:', error);
+                alert(`Error viewing all prescriptions: ${error.message}`);
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        async function viewPrescriptions(docId) {
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+            
+            try {
+                const response = await fetch(`/api/analyze-prescription/${docId}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Get document info for source reference
+                const docResponse = await fetch(`/api/documents/${docId}`);
+                const docData = await docResponse.json();
+                
+                // Add document info to each medication
+                data.medications.forEach(med => {
+                    med.documentId = docId;
+                    med.documentName = docData.filename;
+                });
+
+                // Replace existing prescriptions data with only this document's prescriptions
+                prescriptionsData = data.medications;
+                updateTable();
+                
+            } catch (error) {
+                console.error('Error viewing prescriptions:', error);
+                alert(`Error viewing prescriptions: ${error.message}`);
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        async function refreshPrescriptions(docId) {
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+            
+            try {
+                // First delete existing analysis
+                await fetch(`/api/analyze-prescription/${docId}`, {
+                    method: 'DELETE'
+                });
+                
+                // Clear the current prescriptions view
+                prescriptionsData = [];
+                updateTable();
+                
+                // Generate new analysis
+                await generatePrescriptions(docId);
+                
+            } catch (error) {
+                console.error('Error refreshing prescriptions:', error);
+                alert(`Error refreshing prescriptions: ${error.message}`);
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        function isMedicationActive(medication) {
+            const today = new Date();
+            const startDate = new Date(medication.start_date);
+            const endDate = medication.end_date ? new Date(medication.end_date) : null;
+            
+            if (!endDate) return false;
+            
+            return startDate <= today && endDate >= today;
+        }
+
+        function updateTable() {
+            const tableBody = document.getElementById('prescriptionsTableBody');
+            let filteredData = [...prescriptionsData];
+            
+            // Apply current filter
+            if (currentFilter !== 'all') {
+                filteredData = filteredData.filter(med => {
+                    const isActive = isMedicationActive(med);
+                    return (currentFilter === 'active') === isActive;
+                });
+            }
+            
+            // Apply search filter
+            const searchTerm = document.querySelector('.search-box').value.toLowerCase();
+            if (searchTerm) {
+                filteredData = filteredData.filter(med => 
+                    med.name.toLowerCase().includes(searchTerm) ||
+                    med.dosage?.toLowerCase().includes(searchTerm) ||
+                    med.frequency?.toLowerCase().includes(searchTerm) ||
+                    med.instructions?.toLowerCase().includes(searchTerm) ||
+                    med.documentName.toLowerCase().includes(searchTerm)
+                );
+            }
+            
+            // Apply sorting
+            if (currentSort.column) {
+                filteredData.sort((a, b) => {
+                    let aVal = a[currentSort.column === 'startDate' ? 'start_date' : 
+                               currentSort.column === 'endDate' ? 'end_date' :
+                               currentSort.column === 'page' ? 'page_number' :
+                               currentSort.column] || '';
+                    let bVal = b[currentSort.column === 'startDate' ? 'start_date' : 
+                               currentSort.column === 'endDate' ? 'end_date' :
+                               currentSort.column === 'page' ? 'page_number' :
+                               currentSort.column] || '';
+                    
+                    if (currentSort.column === 'startDate' || currentSort.column === 'endDate') {
+                        // Handle cases where dates might be 'Not specified'
+                        if (aVal === 'Not specified') return currentSort.direction === 'asc' ? 1 : -1;
+                        if (bVal === 'Not specified') return currentSort.direction === 'asc' ? -1 : 1;
+                        aVal = new Date(aVal);
+                        bVal = new Date(bVal);
+                    }
+                    
+                    if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
+                    if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+            
+            // Update table content
+            tableBody.innerHTML = filteredData.map(med => {
+                const isActive = isMedicationActive(med);
+                const status = isActive ? 
+                    '<span class="status-active">Active</span>' : 
+                    '<span class="status-inactive">Inactive</span>';
+                
+                return `
+                    <tr>
+                        <td>${med.name}</td>
+                        <td>${med.dosage || 'Not specified'}</td>
+                        <td>${med.frequency || 'Not specified'}</td>
+                        <td>${med.start_date || 'Not specified'}</td>
+                        <td>${med.end_date || 'Not specified'}</td>
+                        <td>${status}</td>
+                        <td>${med.instructions || 'Not specified'}</td>
+                        <td>${med.documentName}</td>
+                        <td>${med.page_number || 'Not specified'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="viewPage(${med.documentId}, ${med.page_number})">
+                                <i class="fas fa-eye"></i> View Page
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function viewPage(documentId, pageNumber) {
+            try {
+                // Create modal first
+                const modal = document.createElement('div');
+                modal.className = 'modal fade';
+                modal.innerHTML = `
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Page ${pageNumber}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <img src="/api/documents/${documentId}/pages/${pageNumber}/image" class="img-fluid" alt="Page ${pageNumber}">
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.body.appendChild(modal);
+                const modalInstance = new bootstrap.Modal(modal);
+                modalInstance.show();
+                
+                // Clean up modal when hidden
+                modal.addEventListener('hidden.bs.modal', () => {
+                    document.body.removeChild(modal);
+                });
+                
+            } catch (error) {
+                console.error('Error viewing page:', error);
+                alert('Error loading page image');
+            }
+        }
+
+        // Add event listeners for sorting
+        document.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const column = th.dataset.sort;
+                if (currentSort.column === column) {
+                    currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSort.column = column;
+                    currentSort.direction = 'asc';
+                }
+                
+                // Update sort icons
+                document.querySelectorAll('th[data-sort] i').forEach(icon => {
+                    icon.className = 'fas fa-sort';
+                });
+                const icon = th.querySelector('i');
+                icon.className = `fas fa-sort-${currentSort.direction === 'asc' ? 'up' : 'down'}`;
+                
+                updateTable();
+            });
+        });
+
+        // Add event listeners for filters
+        document.querySelectorAll('.btn-filter').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                updateTable();
+            });
+        });
+
+        // Add event listener for search
+        document.querySelector('.search-box').addEventListener('input', () => {
+            updateTable();
+        });
+    </script>
+</body>
+</html> 
