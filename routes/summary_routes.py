@@ -1,8 +1,15 @@
-from flask import jsonify
+from flask import jsonify, Blueprint, request, current_app
 import dateutil.parser
 import json
+import os
+
+# Create the Blueprint
+summary_routes = Blueprint('summary_routes', __name__)
 
 def init_summary_routes(app, db, Document, DocumentSummary, SummaryExtraction, process_document_summary, mistral_client):
+    # Register the blueprint
+    app.register_blueprint(summary_routes)
+
     @app.route('/api/analyze-summary/<int:doc_id>', methods=['GET'])
     def get_document_summary(doc_id):
         """Get summary analysis for a document if it exists"""
@@ -131,4 +138,14 @@ def init_summary_routes(app, db, Document, DocumentSummary, SummaryExtraction, p
             return jsonify({'message': 'No summary analysis found'}), 404
         except Exception as e:
             db.session.rollback()
-            return jsonify({'error': f"Error deleting summary analysis: {str(e)}"}), 500 
+            return jsonify({'error': f"Error deleting summary analysis: {str(e)}"}), 500
+
+    @app.route('/api/seeker-template', methods=['GET'])
+    def get_seeker_template():
+        try:
+            template_path = os.path.join(current_app.root_path, 'modules', 'SeekerTemplate.json')
+            with open(template_path, 'r') as f:
+                template_data = json.load(f)
+            return jsonify(template_data)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500 

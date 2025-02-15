@@ -77,10 +77,23 @@ body {
   align-items: center;
 }
 
+.nav-left {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.nav-right {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
 .navbar h1 {
   color: white;
   margin: 0;
   font-size: 1.5rem;
+  margin-right: 0.5rem;
 }
 
 .navbar a {
@@ -88,11 +101,48 @@ body {
   text-decoration: none;
   padding: 0.5rem 1rem;
   border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.1);
+  transition: background-color 0.2s ease;
 }
 
 .navbar a:hover {
   background-color: rgba(255, 255, 255, 0.2);
+}
+
+.home-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem !important;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.home-button svg {
+  width: 24px;
+  height: 24px;
+  stroke: white;
+}
+
+.theme-toggle {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.theme-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.theme-toggle svg {
+  width: 24px;
+  height: 24px;
+  stroke: white;
 }
 
 /* Container Styles */
@@ -242,29 +292,38 @@ body {
 /* Drop Zone Styles */
 .drop-zone {
   width: 100%;
-  height: 200px;
-  border: 2px dashed var(--secondary-color);
+  height: 100px;
+  border: 3px dashed var(--secondary-color);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  background-color: var(--card-bg);
+  background-color: var(--accent-color);
   cursor: pointer;
   transition: all 0.3s ease;
   margin-bottom: 20px;
-  border: 1px solid var(--border-color);
+  position: relative;
 }
 
 .drop-zone:hover,
 .drop-zone.dragover {
   border-color: var(--primary-color);
-  background-color: var(--accent-color);
+  background-color: var(--hover-bg);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .drop-zone p {
   margin: 0;
-  color: var(--light-text);
+  color: var(--text-color);
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+.drop-zone p:first-child {
+  color: var(--primary-color);
+  font-weight: 600;
 }
 
 /* Table Styles */
@@ -297,7 +356,7 @@ body {
 }
 
 .table td {
-  padding: 1rem;
+  padding: 0.65rem;
   border-bottom: 1px solid var(--table-border);
 }
 
@@ -797,4 +856,11 @@ select:focus {
 
 .footer a:hover {
     border-bottom-color: var(--footer-text);
+}
+
+.page-title {
+  color: var(--heading-color);
+  font-size: 2rem;
+  margin-bottom: 2rem;
+  font-weight: 600;
 }
