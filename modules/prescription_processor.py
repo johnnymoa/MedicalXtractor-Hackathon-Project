@@ -48,7 +48,7 @@ Prescription text:
             messages = [
                 {
                     "role": "system",
-                    "content": "You are a medical prescription analyzer. Extract structured information from prescriptions. Return ONLY a JSON object using this exact structure: {\"medications\": [{\"name\": \"medication name\", \"dosage\": \"dosage information\", \"frequency\": \"how often to take\", \"start_date\": \"YYYY-MM-DD format\", \"duration\": \"duration in format: X days/weeks/months (only 'days', 'weeks', or 'months' allowed, in English)\", \"instructions\": \"additional instructions\", \"page_number\": \"page number where this medication was found (integer)\"}]}."
+                    "content": "You are a medical prescription analyzer. Extract structured information from prescriptions. Return ONLY a JSON object using this exact structure: {\"medications\": [{\"name\": \"medication name\", \"dosage\": \"dosage information\", \"frequency\": \"how often to take\", \"start_date\": \"YYYY-MM-DD format\", \"duration\": \"duration in format: X days/weeks/months (only 'days', 'weeks', or 'months' allowed, in English)\", \"duration_raw\": \"verbatim duration exactly as written in the prescription\", \"instructions\": \"additional instructions\", \"page_number\": \"page number where this medication was found (integer)\"}]}."
                 },
                 {
                     "role": "user",
@@ -98,6 +98,7 @@ def process_prescription_analysis(document, prescription_agent, db, Prescription
                     'frequency': med.frequency,
                     'start_date': med.start_date.isoformat() if med.start_date else None,
                     'duration': med.duration,
+                    'duration_raw': med.duration_raw,
                     'end_date': med.end_date.isoformat() if med.end_date else None,
                     'instructions': med.instructions,
                     'page_number': med.page_number
@@ -149,6 +150,7 @@ def process_prescription_analysis(document, prescription_agent, db, Prescription
                 frequency=med_data.get('frequency'),
                 start_date=start_date,
                 duration=med_data.get('duration'),
+                duration_raw=med_data.get('duration_raw'),
                 end_date=end_date,
                 instructions=med_data.get('instructions'),
                 page_number=med_data.get('page_number')

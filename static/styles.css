@@ -97,10 +97,14 @@ body {
 
 /* Container Styles */
 .container {
-  max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
   margin-bottom: 80px; /* Space for footer */
+  max-width: 90%;
+  
+  @media (max-width: 768px) {
+    max-width: 98%;
+  }
 }
 
 /* Card Styles */
@@ -110,6 +114,7 @@ body {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 2rem;
   border: 1px solid var(--border-color);
+  padding: 20px;
 }
 
 .card-header {
@@ -748,4 +753,48 @@ select:focus {
 * {
   transition: background-color 0.2s ease, color 0.2s ease,
     border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.credits-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.authors-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+    background-color: var(--card-bg);
+}
+
+.authors-table th,
+.authors-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.authors-table th {
+    background-color: var(--accent-color);
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+.authors-table tr:hover {
+    background-color: var(--hover-bg);
+}
+
+.footer a {
+    color: var(--footer-text);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.2s ease;
+}
+
+.footer a:hover {
+    border-bottom-color: var(--footer-text);
 }

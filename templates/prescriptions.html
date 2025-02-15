@@ -71,8 +71,10 @@
                 <div class="col-6">
                     <div class="button-group">
                         <button type="button" class="btn btn-filter active" data-filter="all">All</button>
-                        <button type="button" class="btn btn-filter" data-filter="active">Active</button>
-                        <button type="button" class="btn btn-filter" data-filter="inactive">Inactive</button>
+                        <button type="button" class="btn btn-filter" data-filter="3weeks">3 Weeks</button>
+                        <button type="button" class="btn btn-filter" data-filter="3months">3 Months</button>
+                        <button type="button" class="btn btn-filter" data-filter="6months">6 Months</button>
+                        <button type="button" class="btn btn-filter" data-filter="1year">1 Year</button>
                     </div>
                 </div>
                 <div class="col-6">
@@ -89,8 +91,9 @@
                         <th data-sort="dosage">Dosage <i class="fas fa-sort"></i></th>
                         <th data-sort="frequency">Frequency <i class="fas fa-sort"></i></th>
                         <th data-sort="startDate">Start Date <i class="fas fa-sort"></i></th>
-                        <th data-sort="endDate">End Date <i class="fas fa-sort"></i></th>
-                        <th data-sort="status">Status <i class="fas fa-sort"></i></th>
+                        <th data-sort="duration">Duration <i class="fas fa-sort"></i></th>
+                        <th>Original Duration</th>
+                        <th data-sort="endDate">Presumed End Date <i class="fas fa-sort"></i></th>
                         <th>Instructions</th>
                         <th>Source Document</th>
                         <th data-sort="page">Page <i class="fas fa-sort"></i></th>
@@ -406,14 +409,28 @@
         }
     }
 
-    function isMedicationActive(medication) {
-        const today = new Date();
-        const startDate = new Date(medication.start_date);
-        const endDate = medication.end_date ? new Date(medication.end_date) : null;
+    function isWithinTimeFrame(startDate, timeFrame) {
+        if (!startDate) return false;
         
-        if (!endDate) return false;
+        const date = new Date(startDate);
+        const now = new Date();
+        const timeDiff = now - date;
+        const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
         
-        return startDate <= today && endDate >= today;
+        switch(timeFrame) {
+            case '3weeks':
+                return daysDiff <= 21;
+            case '3months':
+                return daysDiff <= 90;
+            case '6months':
+                return daysDiff <= 180;
+            case '1year':
+                return daysDiff <= 365;
+            case 'all':
+                return true;
+            default:
+                return true;
+        }
     }
 
     function updateTable() {
@@ -422,10 +439,7 @@
         
         // Apply current filter
         if (currentFilter !== 'all') {
-            filteredData = filteredData.filter(med => {
-                const isActive = isMedicationActive(med);
-                return (currentFilter === 'active') === isActive;
-            });
+            filteredData = filteredData.filter(med => isWithinTimeFrame(med.start_date, currentFilter));
         }
         
         // Apply search filter
@@ -468,19 +482,15 @@
         
         // Update table content
         tableBody.innerHTML = filteredData.map(med => {
-            const isActive = isMedicationActive(med);
-            const status = isActive ? 
-                '<span class="status-active">Active</span>' : 
-                '<span class="status-inactive">Inactive</span>';
-            
             return `
                 <tr>
                     <td>${med.name}</td>
                     <td>${med.dosage || 'Not specified'}</td>
                     <td>${med.frequency || 'Not specified'}</td>
                     <td>${med.start_date || 'Not specified'}</td>
+                    <td>${med.duration || 'Not specified'}</td>
+                    <td>${med.duration_raw || 'Not specified'}</td>
                     <td>${med.end_date || 'Not specified'}</td>
-                    <td>${status}</td>
                     <td>${med.instructions || 'Not specified'}</td>
                     <td>${med.documentName}</td>
                     <td>${med.page_number || 'Not specified'}</td>
