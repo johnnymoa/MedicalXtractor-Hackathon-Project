@@ -178,6 +178,26 @@
             line-height: 1.6;
         }
 
+        .page-image {
+            max-width: 100%;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .page-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        @media (max-width: 768px) {
+            .page-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .footer {
             background-color: var(--primary-color);
             color: white;
@@ -312,7 +332,17 @@
                         html += `
                             <div class="page">
                                 <div class="page-header">Page ${page.page_number}</div>
-                                <div class="page-content">${page.content}</div>
+                                <div class="page-container">
+                                    ${page.image_data ? 
+                                        `<div>
+                                            <img src="data:image/png;base64,${page.image_data}" 
+                                                alt="Page ${page.page_number}" 
+                                                class="page-image">
+                                        </div>` : 
+                                        '<div><p>No image available for this page</p></div>'
+                                    }
+                                    <div class="page-content">${page.content}</div>
+                                </div>
                             </div>
                         `;
                     });
@@ -380,7 +410,17 @@
                     html += `
                         <div class="page">
                             <div class="page-header">Page ${result.page_number}</div>
-                            <div class="page-content">${result.content}</div>
+                            <div class="page-container">
+                                ${result.image_data ? 
+                                    `<div>
+                                        <img src="data:image/png;base64,${result.image_data}" 
+                                            alt="Page ${result.page_number}" 
+                                            class="page-image">
+                                    </div>` : 
+                                    '<div><p>No image available for this page</p></div>'
+                                }
+                                <div class="page-content">${result.content}</div>
+                            </div>
                         </div>
                     `;
                 });

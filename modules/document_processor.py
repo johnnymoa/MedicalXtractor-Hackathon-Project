@@ -118,17 +118,22 @@ def process_pdf_document(file, db, Document, Page, mistral_client):
                 try:
                     processed_content = process_page_image_with_throttle(image, page_num, mistral_client)
                     
+                    # Encode image to base64
+                    base64_image = encode_image(image)
+                    
                     # Save page to database
                     page = Page(
                         page_number=page_num,
                         content=processed_content,
+                        image_data=base64_image,
                         document=document
                     )
                     db.session.add(page)
                     
                     results.append({
                         'page_number': page_num,
-                        'content': processed_content
+                        'content': processed_content,
+                        'image_data': base64_image
                     })
                     
                     # Commit each page individually to save progress
@@ -138,7 +143,8 @@ def process_pdf_document(file, db, Document, Page, mistral_client):
                     print(f"Error processing page {page_num}: {str(e)}")
                     results.append({
                         'page_number': page_num,
-                        'content': f"Error processing page {page_num}: {str(e)}"
+                        'content': f"Error processing page {page_num}: {str(e)}",
+                        'image_data': None
                     })
             
             # Clean up temporary file
