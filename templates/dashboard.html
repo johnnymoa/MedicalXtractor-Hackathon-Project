@@ -11,32 +11,92 @@
         <p>Role: {{ current_user.role.replace('_', ' ').title() }}</p>
     </div>
 
+    {% if current_user.role == 'medecin' %}
+    <div class="patient-selector">
+        <div class="patient-selector-container">
+            <div class="patient-select-section">
+                <h3>Select a Patient</h3>
+                <select id="patientSelect" class="form-select">
+                    <option value="">Choose a patient...</option>
+                </select>
+            </div>
+            <div class="patient-add-section">
+                <button class="btn-primary" onclick="showAddPatientPanel()">
+                    <i class="fas fa-user-plus"></i> Add New Patient
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Patient Sidepanel -->
+    <div id="addPatientPanel" class="sidepanel">
+        <div class="sidepanel-content">
+            <div class="sidepanel-header">
+                <h3><i class="fas fa-user-plus"></i> Add New Patient</h3>
+                <button type="button" class="sidepanel-close" onclick="hideAddPatientPanel()">&times;</button>
+            </div>
+            <div class="sidepanel-body">
+                <form id="addPatientForm" onsubmit="createPatient(event)">
+                    <div class="form-group">
+                        <label for="email">Email*</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password*</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_password">Confirm Password*</label>
+                        <input type="password" id="confirm_password" name="confirm_password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="nom">Last Name*</label>
+                        <input type="text" id="nom" name="nom" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="prenom">First Name*</label>
+                        <input type="text" id="prenom" name="prenom" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="organisation">Organization</label>
+                        <input type="text" id="organisation" name="organisation">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="hideAddPatientPanel()">Cancel</button>
+                        <button type="submit" class="btn-primary">Create Patient</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <div class="features-grid">
-        <div class="feature-card">
+        <div class="feature-card {% if current_user.role == 'medecin' %}disabled{% endif %}" id="documents-card">
             <div class="feature-icon">
                 <i class="fas fa-file-medical"></i>
             </div>
             <h3>Medical Documents</h3>
             <p>Upload and manage medical documents</p>
-            <a href="{{ url_for('documents') }}" class="btn-primary">View Documents</a>
+            <a href="{{ url_for('documents') }}" class="btn-primary" {% if current_user.role == 'medecin' %}disabled{% endif %} id="documents-link">View Documents</a>
         </div>
 
-        <div class="feature-card">
+        <div class="feature-card {% if current_user.role == 'medecin' %}disabled{% endif %}" id="prescriptions-card">
             <div class="feature-icon">
                 <i class="fas fa-prescription"></i>
             </div>
             <h3>Prescriptions</h3>
             <p>Analyze and manage prescriptions</p>
-            <a href="{{ url_for('prescriptions') }}" class="btn-primary">View Prescriptions</a>
+            <a href="{{ url_for('prescriptions') }}" class="btn-primary" {% if current_user.role == 'medecin' %}disabled{% endif %} id="prescriptions-link">View Prescriptions</a>
         </div>
 
-        <div class="feature-card">
+        <div class="feature-card {% if current_user.role == 'medecin' %}disabled{% endif %}" id="summarizer-card">
             <div class="feature-icon">
                 <i class="fas fa-book-medical"></i>
             </div>
             <h3>Medical Summarizer</h3>
             <p>Generate summaries from medical documents</p>
-            <a href="{{ url_for('summarizer') }}" class="btn-primary">View Summaries</a>
+            <a href="{{ url_for('summarizer') }}" class="btn-primary" {% if current_user.role == 'medecin' %}disabled{% endif %} id="summarizer-link">View Summaries</a>
         </div>
 
         {% if current_user.role in ['admin', 'centre_regional', 'centre_hospitalier', 'service_hospitalier', 'cabinet_medical'] %}
@@ -74,6 +134,61 @@
     font-size: 1.1rem;
 }
 
+.patient-selector {
+    margin-bottom: 2rem;
+    padding: 1rem 0;
+}
+
+.patient-selector-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.patient-select-section {
+    flex: 2;
+}
+
+.patient-add-section {
+    flex: 1;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.patient-select-section h3 {
+    margin-bottom: 1rem;
+    color: var(--heading-color);
+    text-align: left;
+}
+
+.form-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+.patient-add-section .btn-primary {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+.patient-add-section .btn-primary:hover {
+    background-color: var(--btn-primary-hover);
+}
+
 .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -86,12 +201,26 @@
     padding: 2rem;
     text-align: center;
     box-shadow: 0 2px 4px var(--shadow-color);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-height: 250px;
 }
 
-.feature-card:hover {
+.feature-card:not(.disabled):hover {
     transform: translateY(-5px);
     box-shadow: 0 4px 8px var(--shadow-color);
+}
+
+.feature-card.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.feature-card.disabled a {
+    pointer-events: none;
+    background-color: var(--text-color-secondary);
 }
 
 .feature-icon {
@@ -107,10 +236,11 @@
 
 .feature-card p {
     color: var(--text-color-secondary);
-    margin-bottom: 1.5rem;
+    margin-bottom: auto;
 }
 
-.btn-primary {
+.feature-card .btn-primary {
+    margin-top: 20px;
     display: inline-block;
     padding: 0.75rem 1.5rem;
     background-color: var(--primary-color);
@@ -120,18 +250,301 @@
     transition: background-color 0.3s ease;
 }
 
-.btn-primary:hover {
+.btn-primary:not([disabled]):hover {
     background-color: var(--btn-primary-hover);
 }
 
 @media (max-width: 768px) {
-    .dashboard-container {
-        padding: 1rem;
+    .patient-selector-container {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .patient-select-section, 
+    .patient-add-section {
+        width: 100%;
+    }
+
+    .patient-add-section {
+        justify-content: center;
     }
 
     .features-grid {
         grid-template-columns: 1fr;
     }
 }
+
+.sidepanel {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    height: 100vh;
+    width: 100%;
+    max-width: 500px;
+    background-color: var(--card-bg);
+    box-shadow: -2px 0 8px var(--shadow-color);
+    transition: right 0.3s ease;
+    z-index: 1000;
+}
+
+.sidepanel.open {
+    right: 0;
+}
+
+.sidepanel-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidepanel-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sidepanel-header h3 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--heading-color);
+}
+
+.sidepanel-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-color);
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.sidepanel-body {
+    padding: 1.5rem;
+    padding-right: 3rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.form-group input[type="tel"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    transition: border-color 0.3s ease;
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.form-actions .btn-primary {
+    flex: 1;
+    border-radius: 4px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.form-actions .btn-primary:hover {
+    background-color: var(--btn-primary-hover);
+}
+
+.form-actions .btn-secondary {
+    flex: 1;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.form-actions .btn-secondary:hover {
+    background-color: var(--border-color);
+}
+
+@media (max-width: 768px) {
+    .sidepanel {
+        width: 100%;
+        max-width: none;
+    }
+}
 </style>
+
+{% if current_user.role == 'medecin' %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const patientSelect = document.getElementById('patientSelect');
+    
+    // Load patients list
+    fetch('/api/patients')
+        .then(response => response.json())
+        .then(patients => {
+            patients.forEach(patient => {
+                const option = document.createElement('option');
+                option.value = patient.id;
+                option.textContent = `${patient.prenom} ${patient.nom}`;
+                patientSelect.appendChild(option);
+            });
+            
+            // Check for previously selected patient in localStorage
+            const savedPatientId = localStorage.getItem('selectedPatientId');
+            if (savedPatientId) {
+                patientSelect.value = savedPatientId;
+                patientSelect.dispatchEvent(new Event('change'));
+            }
+        })
+        .catch(error => console.error('Error loading patients:', error));
+
+    // Handle patient selection
+    patientSelect.addEventListener('change', function() {
+        const selectedPatientId = this.value;
+        const cards = document.querySelectorAll('.feature-card');
+        const links = document.querySelectorAll('.btn-primary');
+
+        if (selectedPatientId) {
+            // Enable cards and update links with patient_id parameter
+            cards.forEach(card => card.classList.remove('disabled'));
+            document.getElementById('documents-link').href = `${document.getElementById('documents-link').getAttribute('href')}?patient_id=${selectedPatientId}`;
+            document.getElementById('prescriptions-link').href = `${document.getElementById('prescriptions-link').getAttribute('href')}?patient_id=${selectedPatientId}`;
+            document.getElementById('summarizer-link').href = `${document.getElementById('summarizer-link').getAttribute('href')}?patient_id=${selectedPatientId}`;
+            
+            // Store selected patient ID in localStorage
+            localStorage.setItem('selectedPatientId', selectedPatientId);
+        } else {
+            // Disable cards and remove patient_id parameter
+            cards.forEach(card => card.classList.add('disabled'));
+            links.forEach(link => {
+                link.href = link.href.split('?')[0];
+            });
+            
+            // Remove selected patient ID from localStorage
+            localStorage.removeItem('selectedPatientId');
+        }
+    });
+});
+
+function showAddPatientPanel() {
+    document.getElementById('addPatientPanel').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function hideAddPatientPanel() {
+    document.getElementById('addPatientPanel').classList.remove('open');
+    document.body.style.overflow = '';
+    document.getElementById('addPatientForm').reset();
+}
+
+async function createPatient(event) {
+    event.preventDefault();
+    
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    
+    if (password !== confirmPassword) {
+        alert('Passwords do not match');
+        return;
+    }
+    
+    const userData = {
+        email: document.getElementById('email').value,
+        password: password,
+        nom: document.getElementById('nom').value,
+        prenom: document.getElementById('prenom').value,
+        organisation: document.getElementById('organisation').value || null,
+        role: 'patient'
+    };
+    
+    try {
+        // First, create the user
+        const userResponse = await fetch('/auth/register', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(userData)
+        });
+        
+        const responseData = await userResponse.json();
+        
+        if (!userResponse.ok) {
+            throw new Error(responseData.error || 'Failed to create user');
+        }
+
+        // Then, create the patient relation
+        const patientResponse = await fetch('/api/patients', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                user_id: responseData.user_id
+            })
+        });
+        
+        const patientData = await patientResponse.json();
+        
+        if (patientResponse.ok) {
+            alert('Patient created successfully');
+            hideAddPatientPanel();
+            
+            // Refresh the patient list
+            const patientSelect = document.getElementById('patientSelect');
+            const option = document.createElement('option');
+            option.value = patientData.patient_id;
+            option.textContent = `${userData.prenom} ${userData.nom}`;
+            patientSelect.appendChild(option);
+            
+            // Select the new patient
+            patientSelect.value = patientData.patient_id;
+            patientSelect.dispatchEvent(new Event('change'));
+        } else {
+            throw new Error(patientData.error || 'Failed to create patient relation');
+        }
+    } catch (error) {
+        alert(error.message);
+    }
+}
+</script>
+{% endif %}
 {% endblock %} 

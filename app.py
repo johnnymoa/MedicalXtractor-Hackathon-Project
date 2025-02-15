@@ -123,11 +123,31 @@ def dashboard():
 @app.route('/documents')
 @login_required
 def documents():
+    if current_user.role == 'medecin':
+        patient_id = request.args.get('patient_id')
+        if not patient_id:
+            flash('Please select a patient first', 'warning')
+            return redirect(url_for('dashboard'))
+        # Vérifier que le patient appartient bien au médecin
+        patient = Patient.query.filter_by(id=patient_id, doctor_id=current_user.id).first()
+        if not patient:
+            flash('Patient not found or not associated with you', 'error')
+            return redirect(url_for('dashboard'))
     return render_template('documents.html')
 
 @app.route('/prescriptions')
 @login_required
 def prescriptions():
+    if current_user.role == 'medecin':
+        patient_id = request.args.get('patient_id')
+        if not patient_id:
+            flash('Please select a patient first', 'warning')
+            return redirect(url_for('dashboard'))
+        # Vérifier que le patient appartient bien au médecin
+        patient = Patient.query.filter_by(id=patient_id, doctor_id=current_user.id).first()
+        if not patient:
+            flash('Patient not found or not associated with you', 'error')
+            return redirect(url_for('dashboard'))
     return render_template('prescriptions.html')
 
 @app.route('/profile')
@@ -175,7 +195,18 @@ def logout():
     return redirect(url_for('login'))
 
 @app.route('/summarizer')
+@login_required
 def summarizer():
+    if current_user.role == 'medecin':
+        patient_id = request.args.get('patient_id')
+        if not patient_id:
+            flash('Please select a patient first', 'warning')
+            return redirect(url_for('dashboard'))
+        # Vérifier que le patient appartient bien au médecin
+        patient = Patient.query.filter_by(id=patient_id, doctor_id=current_user.id).first()
+        if not patient:
+            flash('Patient not found or not associated with you', 'error')
+            return redirect(url_for('dashboard'))
     return render_template('summarizer.html')
 
 # Création d'un décorateur pour vérifier les rôles
@@ -271,6 +302,31 @@ def prescriptions_medecin():
     return render_template('medecin/prescriptions.html', 
                          prescriptions=prescriptions,
                          patients=patients)
+
+@app.route('/api/patients', methods=['GET'])
+@login_required
+@role_required(ROLES['MEDECIN'])
+def get_patients():
+    try:
+        # Récupérer tous les utilisateurs qui sont des patients du médecin connecté
+        patients = (User.query
+                   .join(Patient, User.id == Patient.user_id)
+                   .filter(Patient.doctor_id == current_user.id)
+                   .all())
+        
+        # Formater les données des patients
+        patients_data = [{
+            'id': patient.patient_record[0].id,  # ID de la relation patient-médecin
+            'nom': patient.nom,
+            'prenom': patient.prenom,
+            'email': patient.email,
+            'date_creation': patient.patient_record[0].date_creation.strftime('%Y-%m-%d') if patient.patient_record[0].date_creation else None
+        } for patient in patients]
+        
+        return jsonify(patients_data)
+    except Exception as e:
+        print(f"Error getting patients: {str(e)}")
+        return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/prescriptions', methods=['POST'])
 @login_required
@@ -481,30 +537,6 @@ def change_password():
         
     return render_template('change_password.html')
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        if User.query.filter_by(email=email).first():
-            flash('Cet email est déjà utilisé')
-            return redirect(url_for('register'))
-            
-        user = User(
-            email=email,
-            nom=request.form.get('nom'),
-            prenom=request.form.get('prenom'),
-            organisation=request.form.get('organisation'),
-            role=ROLES['PATIENT']  # Par défaut, les nouveaux utilisateurs sont des patients
-        )
-        user.set_password(request.form.get('password'))
-        db.session.add(user)
-        db.session.commit()
-        
-        login_user(user)
-        return redirect(url_for('dashboard'))
-        
-    return render_template('register.html')
-
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
@@ -579,20 +611,20 @@ def add_patient():
     try:
         data = request.get_json()
         
-        # Créer un nouveau patient
+        # Create patient-doctor relation
         patient = Patient(
-            nom=data['nom'],
-            prenom=data['prenom'],
-            date_naissance=datetime.strptime(data['date_naissance'], '%Y-%m-%d').date(),
-            email=data['email'] if data['email'] else None,
-            telephone=data['telephone'] if data['telephone'] else None,
-            medecin_id=current_user.id
+            user_id=data['user_id'],
+            doctor_id=current_user.id
         )
         
         db.session.add(patient)
         db.session.commit()
         
-        return jsonify({'success': True, 'message': 'Patient ajouté avec succès'})
+        return jsonify({
+            'success': True,
+            'patient_id': patient.id,
+            'message': 'Patient relation created successfully'
+        })
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'error': str(e)}), 400
@@ -757,6 +789,49 @@ def get_patient_data(patient_id):
     except Exception as e:
         print(f"Error getting patient data: {str(e)}")
         return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/analyze-summary/<int:doc_id>', methods=['GET', 'POST'])
+@login_required
+def analyze_summary(doc_id):
+    try:
+        document = Document.query.get_or_404(doc_id)
+        
+        # Vérifier les permissions
+        if current_user.role == 'medecin':
+            patient_id = request.args.get('patient_id')
+            if not patient_id:
+                return jsonify({'error': 'Patient ID is required'}), 400
+            patient = Patient.query.filter_by(id=patient_id, doctor_id=current_user.id).first()
+            if not patient or document.user_id != patient.user_id:
+                return jsonify({'error': 'Access denied'}), 403
+        elif current_user.role == 'patient' and document.user_id != current_user.id:
+            return jsonify({'error': 'Access denied'}), 403
+            
+        # Continuer avec l'analyse
+        if request.method == 'POST':
+            return jsonify(process_document_summary(
+                document=document,
+                db=db,
+                DocumentSummary=DocumentSummary,
+                SummaryExtraction=SummaryExtraction,
+                mistral_client=mistral_client
+            ))
+        else:
+            if document.summary:
+                return jsonify({
+                    'extractions': [{
+                        'category': ext.category,
+                        'field': ext.field,
+                        'value': ext.value,
+                        'page_number': ext.page_number,
+                        'associated_date': ext.associated_date.isoformat() if ext.associated_date else None,
+                        'extraction_date': ext.extraction_date.isoformat()
+                    } for ext in document.summary.extractions]
+                })
+            return jsonify({'message': 'No summary analysis found'}), 404
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     with app.app_context():
