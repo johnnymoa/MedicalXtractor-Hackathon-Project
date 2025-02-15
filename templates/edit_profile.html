@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% block title %}TEAM10X - Edit Profile{% endblock %}
+
+{% block nav_title %}Edit Profile{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <h2>Edit Profile</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <form method="POST" action="{{ url_for('edit_profile') }}">
+            <div class="form-group">
+                <label for="nom">Last Name</label>
+                <input type="text" id="nom" name="nom" value="{{ current_user.nom }}" required>
+            </div>
+            <div class="form-group">
+                <label for="prenom">First Name</label>
+                <input type="text" id="prenom" name="prenom" value="{{ current_user.prenom }}" required>
+            </div>
+            <div class="form-group">
+                <label for="organisation">Organization</label>
+                <input type="text" id="organisation" name="organisation" value="{{ current_user.organisation }}">
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn-primary">Save Changes</button>
+            </div>
+            <div class="auth-links">
+                <a href="{{ url_for('change_password') }}">Change Password</a>
+                <span>|</span>
+                <a href="{{ url_for('profile') }}">Back to Profile</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.auth-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 200px);
+    padding: 2rem;
+}
+
+.auth-card {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    padding: 2rem;
+    width: 100%;
+    max-width: 400px;
+}
+
+.auth-card h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--heading-color);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+    margin-right: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+
+.form-group input[type="text"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+}
+
+.btn-primary {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: var(--btn-primary-hover);
+}
+
+.auth-links {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.auth-links a {
+    color: var(--link-color);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.auth-links a:hover {
+    color: var(--link-hover-color);
+}
+
+.auth-links span {
+    margin: 0 0.5rem;
+    color: var(--text-color-secondary);
+}
+
+.alert {
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
+.alert-error {
+    background-color: #fef2f2;
+    border: 1px solid #fee2e2;
+    color: #dc2626;
+}
+
+.alert-success {
+    background-color: #f0fdf4;
+    border: 1px solid #dcfce7;
+    color: #16a34a;
+}
+
+.alert-info {
+    background-color: #eff6ff;
+    border: 1px solid #dbeafe;
+    color: #2563eb;
+}
+</style>
+{% endblock %} 

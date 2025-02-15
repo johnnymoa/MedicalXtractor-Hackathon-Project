@@ -48,23 +48,15 @@ class Document(db.Model):
     filename = db.Column(db.String(255), nullable=False)
     upload_date = db.Column(db.DateTime, default=datetime.utcnow)
     total_pages = db.Column(db.Integer)
-    data = db.Column(db.LargeBinary)  # Add field for file content
-    
     # Relations avec les différentes entités
-    patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'))
-    medecin_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    cabinet_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    service_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    centre_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     
     # Relations
-    medecin = db.relationship('User', foreign_keys=[medecin_id], backref='documents_medecin')
-    cabinet = db.relationship('User', foreign_keys=[cabinet_id], backref='documents_cabinet')
-    service = db.relationship('User', foreign_keys=[service_id], backref='documents_service')
-    centre = db.relationship('User', foreign_keys=[centre_id], backref='documents_centre')
+    user = db.relationship('User', foreign_keys=[user_id], backref='documents')
     
     pages = db.relationship('Page', backref='document', cascade='all, delete-orphan')
     prescription = db.relationship('PrescriptionAnalysis', backref='document', uselist=False, cascade='all, delete-orphan')
+    summary = db.relationship('DocumentSummary', backref='document', uselist=False, cascade='all, delete-orphan')
 
 class Page(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -117,7 +109,6 @@ class Patient(db.Model):
     # Relations
     doctor = db.relationship('User', foreign_keys=[doctor_id], backref='patients')
     user = db.relationship('User', foreign_keys=[user_id], backref='patient_record')
-    documents = db.relationship('Document', backref='patient')
 
 class PasswordResetToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)

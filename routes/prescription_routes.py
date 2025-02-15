@@ -1,6 +1,6 @@
 from flask import jsonify
 
-def init_prescription_routes(app, db, Document, PrescriptionAnalysis, Medication, PrescriptionAgent, process_prescription_analysis, mistral_client):
+def init_prescription_routes(app, db, Document, PrescriptionAnalysis, Medication, prescription_agent, process_prescription_analysis, mistral_client):
     @app.route('/api/analyze-prescription/<int:doc_id>', methods=['GET'])
     def get_prescription_analysis(doc_id):
         """Get prescription analysis for a document if it exists"""
@@ -45,7 +45,6 @@ def init_prescription_routes(app, db, Document, PrescriptionAnalysis, Medication
                     } for med in document.prescription.medications]
                 })
             
-            prescription_agent = PrescriptionAgent(mistral_client)
             return jsonify(process_prescription_analysis(
                 document=document,
                 prescription_agent=prescription_agent,

@@ -5,719 +5,133 @@
 {% block nav_title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="hero">
-    <h2>Hello {{ current_user.prenom }} {{ current_user.nom }}</h2>
-    <p>Welcome to your personal dashboard</p>
-</div>
-
-{% if current_user.role == 'patient' %}
 <div class="dashboard-container">
-    <!-- Section 1: Upload rapide -->
-    <div class="quick-upload-section">
-        <h3>Add a New Medical Document</h3>
-        <div class="upload-zone" onclick="triggerFileUpload()">
-            <i class="fas fa-file-upload"></i>
-            <p>Drop your document here or click to upload</p>
-            <input type="file" id="fileUpload" accept=".pdf" hidden onchange="handleDocument(this.files[0])">
-        </div>
-        <div class="upload-progress" hidden>
-            <div class="progress-bar"></div>
-            <p class="status">Processing document...</p>
-        </div>
+    <div class="welcome-section">
+        <h1>Welcome, {{ current_user.prenom }} {{ current_user.nom }}</h1>
+        <p>Role: {{ current_user.role.replace('_', ' ').title() }}</p>
     </div>
 
-    <!-- Section 2: Prescriptions actives -->
-    <div class="active-prescriptions">
-        <h3>Active Prescriptions</h3>
-        <div class="prescription-cards">
-            {% for prescription in active_prescriptions %}
-            <div class="prescription-card">
-                <h4>{{ prescription.name }}</h4>
-                <p class="dosage">{{ prescription.dosage }}</p>
-                <p class="frequency">{{ prescription.frequency }}</p>
-                <p class="duration">Until: {{ prescription.end_date }}</p>
-            </div>
-            {% else %}
-            <p class="no-data">No active prescriptions</p>
-            {% endfor %}
-        </div>
-        <a href="{{ url_for('my_prescriptions') }}" class="view-all">
-            <i class="fas fa-pills"></i> View all prescriptions
-        </a>
-    </div>
-
-    <!-- Section 3: Documents récents -->
-    <div class="recent-documents">
-        <h3>Recent Documents</h3>
-        <div class="document-list">
-            {% for doc in recent_documents %}
-            <div class="document-item">
+    <div class="features-grid">
+        <div class="feature-card">
+            <div class="feature-icon">
                 <i class="fas fa-file-medical"></i>
-                <span class="doc-name">{{ doc.filename }}</span>
-                <span class="doc-date">{{ doc.upload_date.strftime('%Y-%m-%d') }}</span>
-                <span class="doc-status {{ 'analyzed' if doc.prescription else 'pending' }}">
-                    {{ 'Analyzed' if doc.prescription else 'Pending' }}
-                </span>
             </div>
-            {% else %}
-            <p class="no-data">No documents uploaded yet</p>
-            {% endfor %}
+            <h3>Medical Documents</h3>
+            <p>Upload and manage medical documents</p>
+            <a href="{{ url_for('documents') }}" class="btn-primary">View Documents</a>
         </div>
-        <a href="{{ url_for('documents') }}" class="view-all">
-            <i class="fas fa-folder-open"></i> View all documents
-        </a>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-prescription"></i>
+            </div>
+            <h3>Prescriptions</h3>
+            <p>Analyze and manage prescriptions</p>
+            <a href="{{ url_for('prescriptions') }}" class="btn-primary">View Prescriptions</a>
+        </div>
+
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-book-medical"></i>
+            </div>
+            <h3>Medical Summarizer</h3>
+            <p>Generate summaries from medical documents</p>
+            <a href="{{ url_for('summarizer') }}" class="btn-primary">View Summaries</a>
+        </div>
+
+        {% if current_user.role in ['admin', 'centre_regional', 'centre_hospitalier', 'service_hospitalier', 'cabinet_medical'] %}
+        <div class="feature-card">
+            <div class="feature-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <h3>User Management</h3>
+            <p>Manage users and permissions</p>
+            <a href="{{ url_for('admin.users') }}" class="btn-primary">Manage Users</a>
+        </div>
+        {% endif %}
     </div>
 </div>
-{% endif %}
-
-{% if current_user.role == 'medecin' %}
-<div class="doctor-dashboard">
-    <!-- Patient Selector Header -->
-    <div class="patient-selector-header">
-        <div class="patient-selector">
-            <select id="patientSelect" class="patient-select">
-                <option value="">Select a patient</option>
-                {% for patient in patients %}
-                <option value="{{ patient.id }}">{{ patient.nom }} {{ patient.prenom }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        
-        <!-- Navigation Tabs -->
-        <div class="patient-tabs" style="display: none;">
-            <div class="tabs-left">
-                <a href="#documents" class="tab active" data-tab="documents">
-                    <i class="fas fa-file-medical"></i> Documents
-                </a>
-                <a href="#prescriptions" class="tab" data-tab="prescriptions">
-                    <i class="fas fa-prescription"></i> Prescriptions
-                </a>
-                <a href="#medical-report" class="tab" data-tab="medical-report">
-                    <i class="fas fa-notes-medical"></i> Medical Report
-                </a>
-            </div>
-            <div class="tabs-right">
-                <button class="upload-button" onclick="triggerFileUpload()">
-                    <i class="fas fa-file-upload"></i> Add Document
-                </button>
-                <input type="file" id="fileUpload" accept=".pdf" hidden onchange="handleDocumentUpload(this.files[0])">
-            </div>
-        </div>
-    </div>
-
-    <!-- Content Area -->
-    <div class="tab-content">
-        <div id="documents" class="tab-pane active">
-            <!-- Documents content will be loaded here -->
-        </div>
-        <div id="prescriptions" class="tab-pane">
-            <!-- Prescriptions content will be loaded here -->
-        </div>
-        <div id="medical-report" class="tab-pane">
-            <!-- Medical report content will be loaded here -->
-        </div>
-        <div class="upload-progress" hidden>
-            <div class="progress-bar"></div>
-            <p class="status">Processing document...</p>
-        </div>
-    </div>
-</div>
-
-<style>
-.doctor-dashboard {
-    padding: 2rem;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.patient-selector-header {
-    background: white;
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 2rem;
-}
-
-.patient-selector {
-    margin-bottom: 1rem;
-}
-
-.patient-select {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 1rem;
-    background: white;
-}
-
-.patient-tabs {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.5rem;
-}
-
-.tabs-left {
-    display: flex;
-    gap: 1rem;
-}
-
-.tabs-right {
-    display: flex;
-    align-items: center;
-}
-
-.tab {
-    padding: 0.75rem 1.5rem;
-    color: var(--text-color);
-    text-decoration: none;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: all 0.3s ease;
-}
-
-.tab:hover {
-    background: var(--hover-bg);
-}
-
-.tab.active {
-    background: var(--primary-color);
-    color: white;
-}
-
-.tab-content {
-    margin-top: 2rem;
-}
-
-.tab-pane {
-    display: none;
-}
-
-.tab-pane.active {
-    display: block;
-}
-
-.upload-button {
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: opacity 0.3s ease;
-}
-
-.upload-button:hover {
-    opacity: 0.9;
-}
-
-.upload-progress {
-    margin-top: 1rem;
-    background: white;
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.progress-bar {
-    height: 4px;
-    background: var(--primary-color);
-    width: 0%;
-    transition: width 0.3s ease;
-    border-radius: 2px;
-}
-
-.status {
-    margin-top: 0.5rem;
-    text-align: center;
-    color: var(--text-color);
-}
-
-.status.error {
-    color: var(--error-color);
-}
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tabs = document.querySelectorAll('.tab');
-    const tabPanes = document.querySelectorAll('.tab-pane');
-    const patientTabs = document.querySelector('.patient-tabs');
-    
-    tabs.forEach(tab => {
-        tab.addEventListener('click', (e) => {
-            e.preventDefault();
-            
-            // Remove active class from all tabs and panes
-            tabs.forEach(t => t.classList.remove('active'));
-            tabPanes.forEach(p => p.classList.remove('active'));
-            
-            // Add active class to clicked tab and corresponding pane
-            tab.classList.add('active');
-            const paneId = tab.getAttribute('data-tab');
-            document.getElementById(paneId).classList.add('active');
-        });
-    });
-
-    // Handle patient selection
-    const patientSelect = document.getElementById('patientSelect');
-    patientSelect.addEventListener('change', function() {
-        const patientId = this.value;
-        
-        // Show/hide tabs based on selection
-        patientTabs.style.display = patientId ? 'flex' : 'none';
-        
-        if (patientId) {
-            // Load patient data based on selected patient
-            loadPatientData(patientId);
-        }
-    });
-});
-
-async function loadPatientData(patientId) {
-    try {
-        const response = await fetch(`/api/patient/${patientId}/data`);
-        const data = await response.json();
-        
-        if (data.error) {
-            throw new Error(data.error);
-        }
-        
-        // Update the content of each tab with the patient's data
-        updateTabContents(data);
-    } catch (error) {
-        console.error('Error loading patient data:', error);
-        // Show error message in all tabs
-        showErrorInTabs(error.message);
-    }
-}
-
-function showErrorInTabs(errorMessage) {
-    const errorHtml = `
-        <div class="error-message">
-            <i class="fas fa-exclamation-circle"></i>
-            <p>${errorMessage}</p>
-        </div>
-    `;
-    
-    document.getElementById('documents').innerHTML = errorHtml;
-    document.getElementById('prescriptions').innerHTML = errorHtml;
-    document.getElementById('medical-report').innerHTML = errorHtml;
-}
-
-function updateTabContents(data) {
-    if (!data) {
-        showErrorInTabs('No data available');
-        return;
-    }
-
-    // Update documents tab
-    const documentsPane = document.getElementById('documents');
-    let documentsHtml = `
-        <div class="document-list">
-            ${(data.documents || []).length ? (data.documents || []).map(doc => `
-                <div class="document-item">
-                    <i class="fas fa-file-medical"></i>
-                    <span class="doc-name">${doc.filename}</span>
-                    <span class="doc-date">${doc.upload_date}</span>
-                    <span class="doc-status ${doc.status.toLowerCase()}">${doc.status}</span>
-                </div>
-            `).join('') : '<p class="no-data">No documents found</p>'}
-        </div>
-    `;
-    documentsPane.innerHTML = documentsHtml;
-
-    // Update prescriptions tab
-    const prescriptionsPane = document.getElementById('prescriptions');
-    console
-    let prescriptionsHtml = `
-        <div class="prescription-cards">
-            ${(data.prescriptions || []).length ? (data.prescriptions || []).map(prescription => 
-                (prescription.medications || []).map(med => `
-                    <div class="prescription-card">
-                        <h4>${med.name}</h4>
-                        <p class="dosage">${med.dosage}</p>
-                        <p class="frequency">${med.frequency}</p>
-                        ${med.end_date ? `<p class="duration">Until: ${med.end_date}</p>` : ''}
-                    </div>
-                `).join('')
-            ).join('') : '<p class="no-data">No active prescriptions</p>'}
-        </div>
-    `;
-    prescriptionsPane.innerHTML = prescriptionsHtml;
-
-    // Update medical report tab
-    const medicalReportPane = document.getElementById('medical-report');
-    const medicalReport = data.medical_report || {};
-    let medicalReportHtml = `
-        <div class="medical-report">
-            ${medicalReport.last_visit ? 
-                `<p class="last-visit"><strong>Last Visit:</strong> ${medicalReport.last_visit}</p>` : ''}
-            
-            <div class="medical-info">
-                <h4>Allergies</h4>
-                <p>${medicalReport.allergies || 'No allergies recorded'}</p>
-                
-                <h4>Chronic Conditions</h4>
-                <p>${medicalReport.chronic_conditions || 'No chronic conditions recorded'}</p>
-                
-                <h4>Notes</h4>
-                <p>${medicalReport.notes || 'No additional notes'}</p>
-            </div>
-        </div>
-    `;
-    medicalReportPane.innerHTML = medicalReportHtml;
-}
-
-// Add styles for medical report
-document.querySelector('style').textContent += `
-.medical-report {
-    background: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.medical-info {
-    margin-top: 1.5rem;
-}
-
-.medical-info h4 {
-    color: var(--primary-color);
-    margin-top: 1.5rem;
-    margin-bottom: 0.5rem;
-}
-
-.last-visit {
-    padding: 0.5rem 1rem;
-    background: var(--hover-bg);
-    border-radius: 4px;
-    display: inline-block;
-}
-
-.doc-status {
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.875rem;
-}
-
-.doc-status.analyzed {
-    background: var(--success-color);
-    color: white;
-}
-
-.doc-status.pending {
-    background: var(--warning-color);
-    color: white;
-}
-
-.error-message {
-    background: var(--error-bg);
-    color: var(--error-color);
-    padding: 1rem;
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin: 1rem 0;
-}
-
-.error-message i {
-    font-size: 1.5rem;
-}
-
-.error-message p {
-    margin: 0;
-}
-`;
-
-function triggerFileUpload() {
-    document.getElementById('fileUpload').click();
-}
-
-async function handleDocumentUpload(file) {
-    if (!file) return;
-    
-    const progressBar = document.querySelector('.progress-bar');
-    const status = document.querySelector('.status');
-    const uploadProgress = document.querySelector('.upload-progress');
-    const patientId = document.getElementById('patientSelect').value;
-    
-    if (!patientId) {
-        alert('Please select a patient before uploading a document');
-        return;
-    }
-    
-    try {
-        uploadProgress.hidden = false;
-        
-        // 1. Upload
-        progressBar.style.width = '30%';
-        status.textContent = 'Uploading document...';
-        status.classList.remove('error');
-        
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('patient_id', patientId);
-        
-        const response = await fetch('/api/prescriptions', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {  // Check HTTP status is in 200-299 range
-            // 2. Analysis
-            progressBar.style.width = '60%';
-            status.textContent = 'Analyzing document...';
-            
-            // 3. Success
-            progressBar.style.width = '100%';
-            status.textContent = data.message || 'Document processed successfully!';
-            
-            // 4. Reload patient data
-            await loadPatientData(patientId);
-            
-            // 5. Hide progress after a delay
-            setTimeout(() => {
-                uploadProgress.hidden = true;
-                progressBar.style.width = '0%';
-            }, 2000);
-        } else {
-            throw new Error(data.error || 'Upload failed');
-        }
-    } catch (error) {
-        status.textContent = `Error: ${error.message}`;
-        status.classList.add('error');
-        progressBar.style.width = '0%';
-    }
-}
-
-// Also update the patient version of the handler
-async function handleDocument(file) {
-    if (!file) return;
-    
-    const progressBar = document.querySelector('.progress-bar');
-    const status = document.querySelector('.status');
-    const uploadProgress = document.querySelector('.upload-progress');
-    
-    try {
-        uploadProgress.hidden = false;
-        
-        // 1. Upload
-        progressBar.style.width = '30%';
-        status.textContent = 'Uploading document...';
-        status.classList.remove('error');
-        
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const response = await fetch('/api/prescriptions', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {  // Check HTTP status is in 200-299 range
-            // 2. Analysis
-            progressBar.style.width = '60%';
-            status.textContent = 'Analyzing document...';
-            
-            // 3. Success
-            progressBar.style.width = '100%';
-            status.textContent = data.message || 'Document processed successfully!';
-            
-            // 4. Redirect after success
-            setTimeout(() => {
-                window.location.href = '/patient/prescriptions';
-            }, 1000);
-        } else {
-            throw new Error(data.error || 'Upload failed');
-        }
-    } catch (error) {
-        status.textContent = `Error: ${error.message}`;
-        status.classList.add('error');
-        progressBar.style.width = '0%';
-    }
-}
-</script>
-{% endif %}
-
-{% if current_user.role == 'admin' %}
-<div class="features-grid">
-    <a href="{{ url_for('gestion_utilisateurs') }}" class="feature-card">
-        <i class="fas fa-users-cog"></i>
-        <h3>User Management</h3>
-        <p>Manage system users</p>
-    </a>
-    <a href="{{ url_for('statistiques') }}" class="feature-card">
-        <i class="fas fa-chart-bar"></i>
-        <h3>Statistics</h3>
-        <p>View system statistics</p>
-    </a>
-</div>
-{% endif %}
-
-{% if impersonating %}
-<div class="alert alert-warning">
-    You are currently impersonating {{ impersonated_user.prenom }} {{ impersonated_user.nom }}
-    <a href="{{ url_for('stop_impersonating') }}" class="btn btn-warning">
-        <i class="fas fa-user-slash"></i> Stop Impersonating
-    </a>
-</div>
-{% endif %}
 
 <style>
 .dashboard-container {
-    display: grid;
-    gap: 2rem;
     padding: 2rem;
     max-width: 1200px;
     margin: 0 auto;
 }
 
-.upload-zone {
-    border: 2px dashed var(--border-color);
+.welcome-section {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.welcome-section h1 {
+    color: var(--heading-color);
+    margin-bottom: 0.5rem;
+}
+
+.welcome-section p {
+    color: var(--text-color-secondary);
+    font-size: 1.1rem;
+}
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+}
+
+.feature-card {
+    background-color: var(--card-bg);
     border-radius: 8px;
     padding: 2rem;
     text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    background: white;
+    box-shadow: 0 2px 4px var(--shadow-color);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.upload-zone:hover {
-    border-color: var(--primary-color);
-    background: var(--hover-bg);
+.feature-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px var(--shadow-color);
 }
 
-.upload-zone i {
-    font-size: 2rem;
+.feature-icon {
+    font-size: 2.5rem;
     color: var(--primary-color);
     margin-bottom: 1rem;
 }
 
-.prescription-cards {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-    margin: 1rem 0;
+.feature-card h3 {
+    color: var(--heading-color);
+    margin-bottom: 0.5rem;
 }
 
-.prescription-card {
-    background: white;
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+.feature-card p {
+    color: var(--text-color-secondary);
+    margin-bottom: 1.5rem;
 }
 
-.document-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.document-item {
-    display: flex;
-    align-items: center;
-    padding: 0.75rem;
-    background: white;
-    border-radius: 4px;
-    gap: 1rem;
-}
-
-.view-all {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-top: 1rem;
-    color: var(--primary-color);
+.btn-primary {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--primary-color);
+    color: white;
     text-decoration: none;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
 }
 
-.view-all:hover {
-    text-decoration: underline;
+.btn-primary:hover {
+    background-color: var(--btn-primary-hover);
 }
 
-.upload-progress {
-    margin-top: 1rem;
-}
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
 
-.progress-bar {
-    height: 4px;
-    background: var(--primary-color);
-    width: 0%;
-    transition: width 0.3s ease;
-}
-
-.no-data {
-    color: var(--text-muted);
-    text-align: center;
-    padding: 1rem;
-}
-</style>
-
-<script>
-function triggerFileUpload() {
-    document.getElementById('fileUpload').click();
-}
-
-async function handleDocument(file) {
-    if (!file) return;
-    
-    const progressBar = document.querySelector('.progress-bar');
-    const status = document.querySelector('.status');
-    const uploadProgress = document.querySelector('.upload-progress');
-    
-    try {
-        uploadProgress.hidden = false;
-        
-        // 1. Upload
-        progressBar.style.width = '30%';
-        status.textContent = 'Uploading document...';
-        status.classList.remove('error');
-        
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        const response = await fetch('/api/prescriptions', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const data = await response.json();
-        
-        if (response.ok) {  // Check HTTP status is in 200-299 range
-            // 2. Analysis
-            progressBar.style.width = '60%';
-            status.textContent = 'Analyzing document...';
-            
-            // 3. Success
-            progressBar.style.width = '100%';
-            status.textContent = data.message || 'Document processed successfully!';
-            
-            // 4. Redirect after success
-            setTimeout(() => {
-                window.location.href = '/patient/prescriptions';
-            }, 1000);
-        } else {
-            throw new Error(data.error || 'Upload failed');
-        }
-    } catch (error) {
-        status.textContent = `Error: ${error.message}`;
-        status.classList.add('error');
-        progressBar.style.width = '0%';
+    .features-grid {
+        grid-template-columns: 1fr;
     }
 }
-</script>
+</style>
 {% endblock %} 
