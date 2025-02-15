@@ -65,6 +65,7 @@ class Medication(db.Model):
     frequency = db.Column(db.String(255))
     start_date = db.Column(db.Date)
     duration = db.Column(db.String(255))
+    duration_raw = db.Column(db.String(255))
     end_date = db.Column(db.Date)
     instructions = db.Column(db.Text)
     page_number = db.Column(db.Integer)
@@ -139,6 +140,10 @@ def prescriptions():
 def summarizer():
     return render_template('summarizer.html')
 
+@app.route('/credits')
+def credits():
+    return render_template('credits.html')
+
 @app.route('/api/documents', methods=['GET'])
 def get_documents():
     """Get all documents"""
@@ -206,6 +211,7 @@ def get_prescription_analysis(doc_id):
                     'frequency': med.frequency,
                     'start_date': med.start_date.isoformat() if med.start_date else None,
                     'duration': med.duration,
+                    'duration_raw': med.duration_raw,
                     'end_date': med.end_date.isoformat() if med.end_date else None,
                     'instructions': med.instructions,
                     'page_number': med.page_number
@@ -229,6 +235,7 @@ def analyze_prescription(doc_id):
                     'frequency': med.frequency,
                     'start_date': med.start_date.isoformat() if med.start_date else None,
                     'duration': med.duration,
+                    'duration_raw': med.duration_raw,
                     'end_date': med.end_date.isoformat() if med.end_date else None,
                     'instructions': med.instructions,
                     'page_number': med.page_number
