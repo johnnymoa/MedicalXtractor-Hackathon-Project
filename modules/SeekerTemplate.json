@@ -1,98 +1,41 @@
-[
-  {
-    "category": "patient_information",
+{
+  "patient_demographics": {
+    "version": "1.0",
     "fields": [
       {
-        "Field": "Name",
-        "Description": "Full name of the patient",
+        "Field": "Full Name",
+        "Description": "Patient's full name",
         "ValueType": "Unique",
         "Example": "John Doe"
       },
       {
-        "Field": "First Name",
-        "Description": "Given name of the patient",
-        "ValueType": "Unique",
-        "Example": "John"
-      },
-      {
-        "Field": "Address",
-        "Description": "Residential address of the patient",
-        "ValueType": "Text",
-        "Example": "12 Rue de la Santé, 75013 Paris, France"
-      },
-      {
-        "Field": "Medical Record Number",
-        "Description": "Unique identifier for the patient's medical record",
-        "ValueType": "Unique",
-        "Example": "MRN-20240315-001"
-      },
-      {
         "Field": "Date of Birth",
-        "Description": "Patient's birth date",
+        "Description": "Birth date",
         "ValueType": "Date",
         "Example": "1985-06-15"
       },
       {
-        "Field": "Nationality",
-        "Description": "Country of origin",
+        "Field": "Gender",
+        "Description": "Patient's gender",
         "ValueType": "Text",
-        "Example": "French"
-      },
-      {
-        "Field": "In France Since",
-        "Description": "Date of arrival in France (if applicable)",
-        "ValueType": "Date",
-        "Example": "2005-09-12"
-      },
-      {
-        "Field": "Employment",
-        "Description": "Current job or profession",
-        "ValueType": "Text",
-        "Example": "Software Engineer at Doctolib"
-      },
-      {
-        "Field": "Family Status",
-        "Description": "Information about the patient's family (e.g., spouse, children)",
-        "ValueType": "Text",
-        "Example": "Married, two children"
+        "Example": "Male"
       },
       {
         "Field": "Medical Coverage",
-        "Description": "Health insurance or medical assistance type",
+        "Description": "Health insurance/coverage details",
         "ValueType": "Text",
         "Example": "Assurance Maladie - CPAM"
-      },
-      {
-        "Field": "Follow-up City",
-        "Description": "City where the patient receives medical follow-ups",
-        "ValueType": "Text",
-        "Example": "Paris"
-      },
-      {
-        "Field": "Hospital Follow-up",
-        "Description": "Hospital where the patient has regular hospital check-ups",
-        "ValueType": "Text",
-        "Example": "Hopital Americain de Paris"
-      },
-      {
-        "Field": "Emergency Contact",
-        "Description": "Name and phone number of emergency contact",
-        "ValueType": "Text",
-        "Example": "Jane Doe - +33 6 12 34 56 78"
       }
     ]
   },
-  {
-    "category": "medical_history",
+  "medical_history": {
+    "version": "1.0",
     "fields": [
       {
-        "Field": "Medical History",
-        "Description": "Past medical conditions",
+        "Field": "Past Medical Conditions",
+        "Description": "Significant chronic or past conditions",
         "ValueType": "List",
-        "Example": [
-          {"Condition": "Hypertension", "Date": "2018-05-10"},
-          {"Condition": "Diabetes Type 2", "Date": "2020-11-23"}
-        ]
+        "Example": ["Hypertension", "Diabetes Type 2"]
       },
       {
         "Field": "Surgical History",
@@ -103,430 +46,182 @@
         ]
       },
       {
-        "Field": "Chronic Treatments",
-        "Description": "Ongoing treatments and medications",
+        "Field": "Chronic Medications",
+        "Description": "Ongoing treatments/medications",
         "ValueType": "List",
         "Example": [
-          {"Medication": "Metformin", "Dosage": "500mg", "Frequency": "Twice daily"}
+          {"Medication": "Metformin", "Dosage": "500mg", "Frequency": "BID"}
         ]
       },
       {
-        "Field": "Medication Allergies",
-        "Description": "List of allergies to medications",
+        "Field": "Allergies",
+        "Description": "Known allergies (medications, food, etc.)",
         "ValueType": "List",
         "Example": ["Penicillin", "Ibuprofen"]
       }
     ]
   },
-  {
-    "category": "lifestyle",
+  "lifestyle": {
+    "version": "1.0",
     "fields": [
       {
-        "Field": "Smoking",
-        "Description": "Smoking habit (Yes/No)",
+        "Field": "Smoking Status",
+        "Description": "Patient's smoking habits",
         "ValueType": "Boolean",
         "Example": "No"
       },
       {
-        "Field": "Alcohol",
-        "Description": "Alcohol consumption (Yes/No)",
+        "Field": "Alcohol Consumption",
+        "Description": "Alcohol use (Yes/No)",
         "ValueType": "Boolean",
         "Example": "Yes"
       },
       {
-        "Field": "Other Substances",
+        "Field": "Substance Use",
         "Description": "Use of other substances (Yes/No)",
         "ValueType": "Boolean",
         "Example": "No"
       }
     ]
   },
-  {
-    "category": "screenings",
-    "fields": [
-      {
-        "Field": "Colorectal Cancer Screening",
-        "Description": "Date of last Colorectal Cancer Screening test and recommended frequency",
-        "ValueType": "Date and interval",
-        "Example": {"Date": "2023-04-12", "Interval": "Every 2 years"}
-      },
-      {
-        "Field": "Breast Cancer Screening",
-        "Description": "Date of last Breast Cancer Screening test and recommended frequency",
-        "ValueType": "Date and interval",
-        "Example": {"Date": "N/A", "Interval": "N/A"}
-      },
-      {
-        "Field": "Prostate Cancer Screening",
-        "Description": "Date of last Prostate Cancer Screening test and recommended frequency",
-        "ValueType": "Date and interval",
-        "Example": {"Date": "2023-06-20", "Interval": "Every 2 years"}
-      },
-      {
-        "Field": "Cervical Cancer Screening",
-        "Description": "Date of last Cervical Cancer Screening test and recommended frequency",
-        "ValueType": "Date and interval",
-        "Example": {"Date": "2021-09-15", "Interval": "Every 3 years"}
-      },
-      {
-        "Field": "Lung Cancer Screening",
-        "Description": "Date of last Lung Cancer Screening test and recommended frequency",
-        "ValueType": "Date and interval",
-        "Example": {"Date": "2023-01-10", "Interval": "Every 1 year"}
-      },
-      {
-        "Field": "Osteoporosis Screening",
-        "Description": "Date of last Osteoporosis Screening test",
-        "ValueType": "Date",
-        "Example": {"Date": "2022-07-25"}
-      }
-    ]
-  },
-  {
-    "category": "serology",
-    "fields": [
-      {
-        "Field": "HIV Test",
-        "Description": "Date of last HIV test.",
-        "ValueType": "Date",
-        "Example": "2022-06-30"
-      },
-      {
-        "Field": "Hepatitis B Test",
-        "Description": "Date of last Hepatitis B (VHB) test.",
-        "ValueType": "Date",
-        "Example": "2023-05-14"
-      },
-      {
-        "Field": "Hepatitis C Test",
-        "Description": "Date of last Hepatitis C (VHC) test.",
-        "ValueType": "Date",
-        "Example": "2021-12-02"
-      },
-      {
-        "Field": "Bilharzia Test",
-        "Description": "Date of last Bilharzia (Schistosomiasis) test.",
-        "ValueType": "Date",
-        "Example": "2023-08-21"
-      }
-    ]
-  },
-  {
-    "category": "vaccinations",
-    "fields": [
-      {
-        "Field": "COVID-19 Vaccine",
-        "Description": "Date of last COVID-19 vaccination and recommended schedule.",
-        "ValueType": "Date",
-        "Example": "2023-03-15"
-      },
-      {
-        "Field": "Hepatitis B Vaccine (VHB)",
-        "Description": "Date of last Hepatitis B (VHB) vaccination and recommended schedule.",
-        "ValueType": "Date",
-        "Example": "2022-09-05"
-      },
-      {
-        "Field": "Tetanus, Diphtheria, Pertussis (dTPca)",
-        "Description": "Date of last Tetanus, Diphtheria, Pertussis (dTPca) vaccination and recommended schedule (25, 45, 65, 75, 85 years).",
-        "ValueType": "Date",
-        "Example": "2023-09-10"
-      },
-      {
-        "Field": "Shingles Vaccine (ZONA)",
-        "Description": "Date of last Shingles (ZONA) vaccination. Recommended for individuals over 65 years.",
-        "ValueType": "Date",
-        "Example": "2022-11-05"
-      },
-      {
-        "Field": "Pneumococcal Vaccine (PneumoC)",
-        "Description": "Date of last Pneumococcal (PneumoC) vaccination. Recommended for high-risk individuals (elderly or immunocompromised).",
-        "ValueType": "Date",
-        "Example": "2021-07-18"
-      },
-      {
-        "Field": "Respiratory Syncytial Virus (VRS)",
-        "Description": "Date of last Respiratory Syncytial Virus (VRS) vaccination. Recommended for individuals over 75 years, or over 65 years if necessary.",
-        "ValueType": "Date",
-        "Example": "2023-01-22"
-      },
-      {
-        "Field": "Meningococcal ACWY Vaccine (ACWY)",
-        "Description": "Date of last Meningococcal ACWY (ACWY) vaccination. Recommended for individuals aged 15-25.",
-        "ValueType": "Date",
-        "Example": "2023-06-30"
-      },
-      {
-        "Field": "Human Papillomavirus (HPV) Vaccine",
-        "Description": "Date of last Human Papillomavirus (HPV) vaccination. Recommended before the age of 20.",
-        "ValueType": "Date",
-        "Example": "2021-04-12"
-      },
-      {
-        "Field": "Measles, Mumps, Rubella (ROR) Vaccine",
-        "Description": "Date of last Measles, Mumps, Rubella (ROR) vaccination. Typically administered in childhood with possible booster doses.",
-        "ValueType": "Date",
-        "Example": "2019-03-08"
-      },
-      {
-        "Field": "Influenza Vaccine (Grippe)",
-        "Description": "Date of last Influenza (Grippe) vaccination. Recommended annually for individuals over 65 years.",
-        "ValueType": "Date",
-        "Example": "2023-10-01"
-      },
-      {
-        "Field": "Prevnar 20 (PREVNAR20)",
-        "Description": "Date of last Prevnar 20 (PREVNAR20) vaccination. Recommended for preventing pneumococcal infections in elderly or high-risk individuals.",
-        "ValueType": "Date",
-        "Example": "2022-08-14"
-      },
-      {
-        "Field": "Varicella-Zoster Virus Vaccine (VZV)",
-        "Description": "Date of last Varicella-Zoster Virus (VZV) vaccination. Recommended for preventing chickenpox or shingles in high-risk individuals.",
-        "ValueType": "Date",
-        "Example": "2021-02-25"
-      }
-    ]
-  },
-  {
-    "category": "observations",
+  "vital_signs": {
+    "version": "1.0",
     "fields": [
       {
         "Field": "Weight",
-        "Description": "Date of last recorded weight and measured value in kilograms (kg).",
+        "Description": "Latest weight (kg)",
         "ValueType": "Numeric (kg)",
-        "Example": {
-          "Date": "2024-02-01",
-          "Value": "72"
-        }
+        "Example": {"Date": "2024-02-01", "Value": 72}
       },
       {
         "Field": "Height",
-        "Description": "Date of last recorded height and measured value in centimeters (cm).",
+        "Description": "Latest height (cm)",
         "ValueType": "Numeric (cm)",
-        "Example": {
-          "Date": "2023-08-15",
-          "Value": "175"
-        }
+        "Example": {"Date": "2023-08-15", "Value": 175}
       },
       {
         "Field": "Body Temperature",
-        "Description": "Date of last recorded body temperature in degrees Celsius (°C).",
+        "Description": "Body temperature (°C)",
         "ValueType": "Numeric (°C)",
-        "Example": {
-          "Date": "2024-01-20",
-          "Value": "37.1"
-        }
-      },
-      {
-        "Field": "Heart Rate",
-        "Description": "Date of last recorded heart rate in beats per minute (bpm).",
-        "ValueType": "Numeric (bpm)",
-        "Example": {
-          "Date": "2024-02-10",
-          "Value": "72"
-        }
+        "Example": {"Date": "2024-01-20", "Value": 37.1}
       },
       {
         "Field": "Blood Pressure",
-        "Description": "Date of last recorded blood pressure measurement in mmHg.",
-        "ValueType": "Numeric (mmHg)",
-        "Example": {
-          "Date": "2024-01-30",
-          "Value": "120/80"
-        }
+        "Description": "Blood pressure (mmHg)",
+        "ValueType": "Text",
+        "Example": {"Date": "2024-01-30", "Value": "120/80"}
+      },
+      {
+        "Field": "Heart Rate",
+        "Description": "Heart rate (bpm)",
+        "ValueType": "Numeric (bpm)",
+        "Example": {"Date": "2024-02-10", "Value": 72}
       },
       {
         "Field": "Respiratory Rate",
-        "Description": "Date of last recorded respiratory rate in breaths per minute (rpm).",
+        "Description": "Respiratory rate (rpm)",
         "ValueType": "Numeric (rpm)",
-        "Example": {
-          "Date": "2024-01-25",
-          "Value": "16"
-        }
+        "Example": {"Date": "2024-01-25", "Value": 16}
       },
       {
         "Field": "Oxygen Saturation",
-        "Description": "Date of last recorded oxygen saturation percentage (SpO2).",
+        "Description": "Oxygen saturation (%)",
         "ValueType": "Numeric (%)",
-        "Example": {
-          "Date": "2024-01-18",
-          "Value": "98"
-        }
-      },
-      {
-        "Field": "Urinalysis (BU)",
-        "Description": "Date and result of last urinalysis (BU).",
-        "ValueType": "Text",
-        "Example": {
-          "Date": "2024-01-22",
-          "Result": "Normal"
-        }
-      },
-      {
-        "Field": "Blood Glucose (Dextro)",
-        "Description": "Date and value of last blood glucose (dextro) measurement in mg/dL.",
-        "ValueType": "Numeric (mg/dL)",
-        "Example": {
-          "Date": "2024-02-05",
-          "Value": "95"
-        }
-      },
-      {
-        "Field": "Electrocardiogram (ECG)",
-        "Description": "Date and result of last electrocardiogram (ECG) examination.",
-        "ValueType": "Text",
-        "Example": {
-          "Date": "2024-02-01",
-          "Result": "Normal sinus rhythm"
-        }
-      },
-      {
-        "Field": "Chest X-ray",
-        "Description": "Date and result of last chest X-ray examination.",
-        "ValueType": "Text",
-        "Example": {
-          "Date": "2023-12-20",
-          "Result": "Clear lungs, no abnormalities"
-        }
-      },
-      {
-        "Field": "Ultrasound",
-        "Description": "Date and result of last ultrasound examination.",
-        "ValueType": "Text",
-        "Example": {
-          "Date": "2023-11-10",
-          "Result": "Normal liver, gallbladder, and kidneys"
-        }
-      },
-      {
-        "Field": "MRI Scan",
-        "Description": "Date and result of last MRI scan examination.",
-        "ValueType": "Text",
-        "Example": {
-          "Date": "2023-09-05",
-          "Result": "No evidence of brain abnormalities"
-        }
-      },
-      {
-        "Field": "CT Scan",
-        "Description": "Date and result of last CT scan examination.",
-        "ValueType": "Text",
-        "Example": {
-          "Date": "2023-07-15",
-          "Result": "Clear sinuses, no tumors"
-        }
-      },
-      {
-        "Field": "Endoscopy",
-        "Description": "Date and result of last endoscopy examination.",
-        "ValueType": "Text",
-        "Example": {
-          "Date": "2023-05-20",
-          "Result": "Mild gastritis, no ulcers"
-        }
-      },
-      {
-        "Field": "Colonoscopy",
-        "Description": "Date and result of last colonoscopy examination.",
-        "ValueType": "Text",
-        "Example": {
-          "Date": "2023-03-10",
-          "Result": "No polyps or tumors"
-        }
-      },
-      {
-        "Field": "Mammogram",
-        "Description": "Date and result of last mammogram examination.",
-        "ValueType": "Text",
-        "Example": {
-          "Date": "2022-12-15",
-          "Result": "No signs of breast cancer"
-        }
-      },
-      {
-        "Field": "Bone Density Scan",
-        "Description": "Date and result of last bone density scan examination.",
-        "ValueType": "Text",
-        "Example": {
-          "Date": "2022-10-20",
-          "Result": "Normal bone density"
-        }
+        "Example": {"Date": "2024-01-18", "Value": 98}
       }
     ]
   },
-  {
-    "category": "medical_orders",
+  "diagnostics": {
+    "version": "1.0",
     "fields": [
       {
-        "Field": "Treatment Prescription",
-        "Description": "Date and details of the last prescribed medications, including dosage and frequency.",
+        "Field": "Lab Results",
+        "Description": "Recent laboratory test outcomes",
         "ValueType": "List",
-        "Example": {
-          "Date": "2024-02-10",
-          "Prescriptions": [
-            {
-              "Medication": "Paracetamol",
-              "Dosage": "1g",
-              "Frequency": "Every 8 hours"
-            },
-            {
-              "Medication": "Ibuprofen",
-              "Dosage": "400mg",
-              "Frequency": "Twice daily"
-            }
-          ]
-        }
+        "Example": [
+          {"Test": "Complete Blood Count", "Date": "2024-02-12", "Result": "Normal"}
+        ]
       },
       {
-        "Field": "Lab Tests",
-        "Description": "Date and list of laboratory tests prescribed by the doctor.",
+        "Field": "Imaging Studies",
+        "Description": "Recent imaging (X-ray, MRI, CT, Ultrasound) reports",
         "ValueType": "List",
-        "Example": {
-          "Date": "2024-02-12",
-          "Tests": [
-            "Complete Blood Count (CBC)",
-            "Blood Glucose Test",
-            "Liver Function Test"
-          ]
-        }
+        "Example": [
+          {"Type": "Chest X-ray", "Date": "2023-12-20", "Result": "Clear lungs"}
+        ]
       },
       {
-        "Field": "Radiology Orders",
-        "Description": "Date and type of imaging tests prescribed by the doctor.",
+        "Field": "Screening Tests",
+        "Description": "Preventive screening results (e.g., colonoscopy, mammogram)",
         "ValueType": "List",
-        "Example": {
-          "Date": "2024-01-25",
-          "Imaging": [
-            "Chest X-ray",
-            "Abdominal Ultrasound"
-          ]
-        }
+        "Example": [
+          {"Test": "Colonoscopy", "Date": "2023-03-10", "Result": "Normal"}
+        ]
+      },
+      {
+        "Field": "Serology",
+        "Description": "Serological test outcomes (e.g., HIV, Hepatitis)",
+        "ValueType": "List",
+        "Example": [
+          {"Test": "HIV", "Date": "2022-06-30", "Result": "Negative"}
+        ]
+      }
+    ]
+  },
+  "preventive_care": {
+    "version": "1.0",
+    "fields": [
+      {
+        "Field": "Vaccinations",
+        "Description": "Vaccination history with dates",
+        "ValueType": "List",
+        "Example": [
+          {"Vaccine": "COVID-19", "Date": "2023-03-15"},
+          {"Vaccine": "Influenza", "Date": "2023-10-01"},
+          {"Vaccine": "Hepatitis B", "Date": "2022-09-05"}
+        ]
+      }
+    ]
+  },
+  "treatment_and_followup": {
+    "version": "1.0",
+    "fields": [
+      {
+        "Field": "Recent Prescriptions",
+        "Description": "Details of recently prescribed medications",
+        "ValueType": "List",
+        "Example": [
+          {
+            "Medication": "Paracetamol",
+            "Dosage": "1g",
+            "Frequency": "q8h",
+            "Date": "2024-02-10"
+          }
+        ]
+      },
+      {
+        "Field": "Lab/Radiology Orders",
+        "Description": "Pending or recently ordered lab tests and imaging",
+        "ValueType": "List",
+        "Example": [
+          {"Order": "Chest X-ray", "Date": "2024-01-25"},
+          {"Order": "CBC", "Date": "2024-02-12"}
+        ]
       },
       {
         "Field": "Specialist Referrals",
-        "Description": "Date and details of referrals to specialists (e.g., cardiologist, endocrinologist, psychologist).",
+        "Description": "Referrals to specialists with reasons",
         "ValueType": "List",
-        "Example": {
-          "Date": "2024-02-05",
-          "Referrals": [
-            {
-              "Specialty": "Cardiology",
-              "Reason": "Hypertension evaluation"
-            },
-            {
-              "Specialty": "Endocrinology",
-              "Reason": "Diabetes management"
-            }
-          ]
-        }
+        "Example": [
+          {"Specialty": "Cardiology", "Date": "2024-02-05", "Reason": "Hypertension evaluation"}
+        ]
       },
       {
-        "Field": "Next Consultation Date",
-        "Description": "Date of the next planned medical consultation.",
+        "Field": "Next Appointment",
+        "Description": "Scheduled next consultation date",
         "ValueType": "Date",
         "Example": "2024-03-15"
       }
     ]
   }
-]
+}

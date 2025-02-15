@@ -37,8 +37,15 @@
 <!-- Analyzed Documents List -->
 <div class="card">
     <div class="card-header">
-        <h2>Analyzed Documents</h2>
-        <p>Documents with extracted prescriptions</p>
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2>Analyzed Documents</h2>
+                <p>Documents with extracted prescriptions</p>
+            </div>
+            <button class="btn btn-primary" onclick="viewAllPrescriptions()">
+                View All Prescriptions
+            </button>
+        </div>
     </div>
     <div class="card-body">
         <div class="table-responsive">
@@ -271,13 +278,12 @@
             
             // Clear existing prescriptions
             prescriptionsData = [];
+            currentDocumentId = null;
             
             // Fetch prescriptions for each document
             for (const doc of documents) {
                 try {
-                    const response = await fetch(`/api/analyze-prescription/${doc.id}`, {
-                        method: 'POST'
-                    });
+                    const response = await fetch(`/api/analyze-prescription/${doc.id}`);
                     const data = await response.json();
                     
                     if (!data.error && data.medications) {

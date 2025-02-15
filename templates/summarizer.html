@@ -34,8 +34,15 @@
     <!-- Analyzed Documents List -->
     <div class="card">
         <div class="card-header">
-            <h2>Analyzed Documents</h2>
-            <p>Documents with extracted summaries</p>
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2>Analyzed Documents</h2>
+                    <p>Documents with extracted summaries</p>
+                </div>
+                <button class="btn btn-primary" onclick="viewAllExtractions()">
+                    View All Extractions
+                </button>
+            </div>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -89,6 +96,7 @@
                             <th data-sort="associatedDate">Associated Date <i class="fas fa-sort"></i></th>
                             <th data-sort="extractionDate">Extraction Date <i class="fas fa-sort"></i></th>
                             <th data-sort="page">Page <i class="fas fa-sort"></i></th>
+                            <th data-sort="documentName">Source Document <i class="fas fa-sort"></i></th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -189,15 +197,17 @@
                         <td>${doc.total_pages}</td>
                         <td>${data.extractions.length} extractions</td>
                         <td>
-                            <button class="btn btn-primary" onclick="viewExtractions(${doc.id})">
-                                View Extractions
-                            </button>
-                            <button class="btn btn-refresh" onclick="refreshSummary(${doc.id})">
-                                <i class="fas fa-sync-alt"></i> Refresh
-                            </button>
-                            <button class="btn btn-danger" onclick="deleteSummary(${doc.id})">
-                                <i class="fas fa-trash"></i> Delete Analysis
-                            </button>
+                            <div style="display: flex; gap: 8px;">
+                                <button class="btn btn-primary" onclick="viewExtractions(${doc.id})">
+                                    View Extractions
+                                </button>
+                                <button class="btn btn-refresh" onclick="refreshSummary(${doc.id})">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                                <button class="btn btn-danger" onclick="deleteSummary(${doc.id})">
+                                    <i class="fas fa-trash"></i> Delete Analysis
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -266,8 +276,9 @@
             const docResponse = await fetch(`/api/documents/${docId}`);
             const docData = await docResponse.json();
             
-            // Update extractions data
-            extractionsData = data.extractions;
+            // Update extractions data and current document ID
+            extractionsData = data.extractions.filter(ext => ext.page_number != null);
+            currentDocumentId = docId;
             
             // Update categories
             categories = new Set(extractionsData.map(ext => ext.category));
@@ -362,6 +373,45 @@
         });
     }
 
+    function formatValue(value) {
+        try {
+            // If value is already an object or array, stringify it first
+            if (typeof value === 'object' && value !== null) {
+                value = JSON.stringify(value);
+            }
+            
+            // Now try to parse if it's a JSON string
+            if (typeof value === 'string' && (value.startsWith('[') || value.startsWith('{'))) {
+                const parsedValue = JSON.parse(value);
+                
+                if (Array.isArray(parsedValue)) {
+                    // Format array items
+                    return parsedValue.map(item => {
+                        if (typeof item === 'object' && item !== null) {
+                            // Format object items in array
+                            return Object.entries(item)
+                                .map(([key, val]) => `${key}: ${val}`)
+                                .join(', ');
+                        }
+                        return item;
+                    }).join('<br>');
+                } else if (typeof parsedValue === 'object' && parsedValue !== null) {
+                    // Format object items
+                    return Object.entries(parsedValue)
+                        .map(([key, val]) => `${key}: ${val}`)
+                        .join('<br>');
+                }
+                return value;
+            }
+            
+            // Return non-JSON values as is
+            return value;
+        } catch (e) {
+            console.error('Error formatting value:', e);
+            return value;
+        }
+    }
+
     function updateTable() {
         const tableBody = document.getElementById('extractionsTableBody');
         let filteredData = [...extractionsData];
@@ -377,7 +427,8 @@
             filteredData = filteredData.filter(ext => 
                 ext.category.toLowerCase().includes(searchTerm) ||
                 ext.field.toLowerCase().includes(searchTerm) ||
-                ext.value.toLowerCase().includes(searchTerm)
+                ext.value.toLowerCase().includes(searchTerm) ||
+                (ext.document_name && ext.document_name.toLowerCase().includes(searchTerm))
             );
         }
         
@@ -404,17 +455,18 @@
             });
         }
         
-        // Update table content
+        // Update table content with document name
         tableBody.innerHTML = filteredData.map(ext => `
             <tr>
                 <td>${ext.category}</td>
                 <td>${ext.field}</td>
-                <td>${ext.value}</td>
+                <td>${formatValue(ext.value)}</td>
                 <td>${ext.associated_date || 'Not specified'}</td>
-                <td>${new Date(ext.extraction_date).toLocaleString()}</td>
+                <td>${ext.extraction_date || 'Not specified'}</td>
                 <td>${ext.page_number}</td>
+                <td>${ext.document_name || 'Not specified'}</td>
                 <td>
-                    <button class="btn btn-sm btn-primary" onclick="viewPage(${currentDocumentId}, ${ext.page_number})">
+                    <button class="btn btn-sm btn-primary" onclick="viewPage(${ext.document_id || currentDocumentId}, ${ext.page_number})">
                         <i class="fas fa-eye"></i> View Page
                     </button>
                 </td>
@@ -458,5 +510,58 @@
     document.querySelector('.search-box').addEventListener('input', () => {
         updateTable();
     });
+
+    async function viewAllExtractions() {
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
+        
+        try {
+            // Get all analyzed documents
+            const response = await fetch('/api/documents');
+            const documents = await response.json();
+            
+            // Initialize array to store all extractions
+            let allExtractions = [];
+            
+            // Fetch extractions for each analyzed document
+            for (const doc of documents) {
+                try {
+                    const extractionResponse = await fetch(`/api/analyze-summary/${doc.id}`);
+                    const data = await extractionResponse.json();
+                    
+                    if (data.extractions) {
+                        // Add document information to each extraction
+                        const enhancedExtractions = data.extractions.map(ext => ({
+                            ...ext,
+                            document_name: doc.filename,
+                            document_id: doc.id
+                        }));
+                        allExtractions = allExtractions.concat(enhancedExtractions);
+                    }
+                } catch (error) {
+                    console.error(`Error fetching extractions for document ${doc.id}:`, error);
+                }
+            }
+            
+            // Filter out extractions with null page number
+            allExtractions = allExtractions.filter(ext => ext.page_number != null);
+            // Update extractions data and reset current document ID
+            extractionsData = allExtractions;
+            currentDocumentId = null;
+            
+            // Update categories
+            categories = new Set(extractionsData.map(ext => ext.category));
+            updateCategoryFilters();
+            
+            // Update table
+            updateTable();
+            
+        } catch (error) {
+            console.error('Error viewing all extractions:', error);
+            alert(`Error viewing all extractions: ${error.message}`);
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
 </script>
 {% endblock %} 
