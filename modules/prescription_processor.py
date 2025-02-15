@@ -39,28 +39,21 @@ class PrescriptionAgent:
     def analyze_prescription(self, text: str, pages_info: list) -> dict:
         """Analyze prescription text and extract structured information"""
         try:
+            prompt = f"""For each medication you find, determine which page it appears on from this page information:
+{pages_info}
+
+Prescription text:
+{text}"""
+
             messages = [
-                {"role": "system", "content": "You are a medical prescription analyzer. Extract structured information from prescriptions."},
-                {"role": "user", "content": f"""Analyze this prescription and return ONLY a JSON object with this exact structure:
-                {{
-                    "medications": [
-                        {{
-                            "name": "medication name",
-                            "dosage": "dosage information",
-                            "frequency": "how often to take",
-                            "start_date": "YYYY-MM-DD format",
-                            "duration": "duration in format: X days/weeks/months",
-                            "instructions": "additional instructions",
-                            "page_number": "page number where this medication was found (integer)"
-                        }}
-                    ]
-                }}
-                
-                For each medication you find, determine which page it appears on from this page information:
-                {pages_info}
-                
-                Prescription text:
-                {text}"""}
+                {
+                    "role": "system",
+                    "content": "You are a medical prescription analyzer. Extract structured information from prescriptions. Return ONLY a JSON object using this exact structure: {\"medications\": [{\"name\": \"medication name\", \"dosage\": \"dosage information\", \"frequency\": \"how often to take\", \"start_date\": \"YYYY-MM-DD format\", \"duration\": \"duration in format: X days/weeks/months (only 'days', 'weeks', or 'months' allowed, in English)\", \"instructions\": \"additional instructions\", \"page_number\": \"page number where this medication was found (integer)\"}]}."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
             ]
             
             response = self.mistral_client.chat.complete(
