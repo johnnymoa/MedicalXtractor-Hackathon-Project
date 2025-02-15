@@ -3,8 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light dark" />
-    <title>{% block title %}TEAM10X{% endblock %}</title>
+    <meta name="color-scheme" content="light dark" />-
     <!-- Font Awesome CDN -->
     <link 
       rel="stylesheet" 
@@ -13,6 +12,7 @@
       crossorigin="anonymous" 
       referrerpolicy="no-referrer" 
     />
+    <title>{% block title %}MedicalXtractor{% endblock %}</title>
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='styles.css') }}"
@@ -22,7 +22,7 @@
   <body>
     <nav class="navbar">
       <div class="nav-left">
-        <h1>{% block nav_title %}TEAM10X{% endblock %}</h1>
+        <h1>MedicalXtractor</h1>
         {% if current_user.is_authenticated and current_user.role == 'medecin' and request.endpoint != 'dashboard' %}
         <div class="patient-nav-selector">
           <select id="navPatientSelect" class="nav-form-select">
@@ -33,10 +33,15 @@
       </div>
       <div class="nav-right">
         {% if current_user.is_authenticated %}
+      </div>
+      <div class="nav-right">
+        <a href="{{ url_for('documents') }}">Documents</a>
+        <a href="{{ url_for('prescriptions') }}">Prescriptions</a>
+        <a href="{{ url_for('summarizer') }}">Summaries</a>
         <button
           class="theme-toggle"
           id="theme-toggle"
-          title="Toggle theme"
+          title="Toggle dark mode"
         >
           <i class="fas fa-sun" id="sun-icon"></i>
           <i class="fas fa-moon" id="moon-icon"></i>
@@ -71,7 +76,7 @@
     <div class="container">{% block content %}{% endblock %}</div>
 
     <footer class="footer">
-      <p>&copy; 2025 TEAM10X. All rights reserved. | <a href="{{ url_for('credits') }}">Credits</a></p>
+      <p>&copy; 2025 MedicalXtractor. All rights reserved. | <a href="{{ url_for('credits') }}">Credits</a></p>
     </footer>
 
     <style>

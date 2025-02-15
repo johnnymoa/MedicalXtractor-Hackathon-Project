@@ -1,7 +1,15 @@
-from flask import jsonify
+from flask import jsonify, Blueprint, request, current_app
 import dateutil.parser
+import json
+import os
+
+# Create the Blueprint
+summary_routes = Blueprint('summary_routes', __name__)
 
 def init_summary_routes(app, db, Document, DocumentSummary, SummaryExtraction, process_document_summary, mistral_client):
+    # Register the blueprint
+    app.register_blueprint(summary_routes)
+
     @app.route('/api/analyze-summary/<int:doc_id>', methods=['GET'])
     def get_document_summary(doc_id):
         """Get summary analysis for a document if it exists"""
@@ -12,7 +20,7 @@ def init_summary_routes(app, db, Document, DocumentSummary, SummaryExtraction, p
                     'extractions': [{
                         'category': ext.category,
                         'field': ext.field,
-                        'value': ext.value,
+                        'value': ext.value,  # Send the raw value as stored in the database
                         'page_number': ext.page_number,
                         'associated_date': ext.associated_date.isoformat() if ext.associated_date else None,
                         'extraction_date': ext.extraction_date.isoformat()
@@ -26,10 +34,12 @@ def init_summary_routes(app, db, Document, DocumentSummary, SummaryExtraction, p
     def analyze_document_summary(doc_id):
         """Analyze document and create structured summary"""
         try:
+            print(f"\n🔄 Starting summary analysis for document {doc_id}")
             document = Document.query.get_or_404(doc_id)
             
             # Only create new analysis if one doesn't exist
             if document.summary:
+                print(f"📝 Summary already exists for document {doc_id}")
                 return jsonify({
                     'extractions': [{
                         'category': ext.category,
@@ -46,34 +56,73 @@ def init_summary_routes(app, db, Document, DocumentSummary, SummaryExtraction, p
                 'page_number': page.page_number,
                 'content': page.content
             } for page in document.pages]
+            print(f"📄 Retrieved {len(pages)} pages for processing")
             
             # Process document using summarizer
-            extractions = process_document_summary(pages, mistral_client)
+            print("🤖 Starting document processing...")
+            result = process_document_summary(pages, mistral_client)
+            
+            # Check for errors in processing
+            if 'error' in result:
+                print(f"❌ Error in document processing: {result['error']}")
+                raise Exception(result['error'])
+                
+            extractions = result['extractions']
+            print(f"✅ Successfully processed document, got {len(extractions)} extractions")
             
             # Create new summary
+            print("💾 Creating new summary record...")
             summary = DocumentSummary(document_id=doc_id)
             db.session.add(summary)
+            db.session.flush()  # Flush to get the summary ID
+            print(f"✅ Created summary record with ID: {summary.id}")
             
             # Add extractions
-            for ext in extractions:
-                extraction = SummaryExtraction(
-                    summary_id=summary.id,
-                    category=ext['category'],
-                    field=ext['field'],
-                    value=ext['value'],
-                    page_number=ext['page'],
-                    associated_date=dateutil.parser.parse(ext['associated_date']).date() if ext['associated_date'] else None,
-                    extraction_date=dateutil.parser.parse(ext['extraction_date'])
-                )
-                db.session.add(extraction)
+            print("📥 Adding extractions to database...")
+            for i, ext in enumerate(extractions, 1):
+                try:
+                    print(f"\n🔄 Processing extraction {i}/{len(extractions)}")
+                    print(f"📝 Extraction data: {json.dumps(ext, indent=2)}")
+                    
+                    # Parse date if present
+                    associated_date = None
+                    if ext.get('associated_date'):
+                        try:
+                            associated_date = dateutil.parser.parse(ext['associated_date']).date()
+                            print(f"📅 Parsed associated_date: {associated_date}")
+                        except Exception as date_error:
+                            print(f"⚠️ Error parsing date: {str(date_error)}")
+                    
+                    extraction = SummaryExtraction(
+                        summary_id=summary.id,
+                        category=ext['category'],
+                        field=ext['field'],
+                        value=ext['value'],
+                        page_number=ext['page_number'],
+                        associated_date=associated_date,
+                        extraction_date=dateutil.parser.parse(ext['extraction_date'])
+                    )
+                    print(f"✅ Created extraction object: {extraction}")
+                    db.session.add(extraction)
+                    print(f"✅ Added extraction {i} to session")
+                except Exception as ext_error:
+                    print(f"❌ Error processing extraction {i}: {str(ext_error)}")
+                    print(f"❌ Problematic extraction data: {json.dumps(ext, indent=2)}")
+                    raise
             
+            print("💾 Committing all changes to database...")
             db.session.commit()
+            print("✅ Successfully committed all changes")
             
             return jsonify({
                 'extractions': extractions
             })
             
         except Exception as e:
+            print(f"❌ Error in analyze_document_summary: {str(e)}")
+            print(f"❌ Error type: {type(e).__name__}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
@@ -89,4 +138,14 @@ def init_summary_routes(app, db, Document, DocumentSummary, SummaryExtraction, p
             return jsonify({'message': 'No summary analysis found'}), 404
         except Exception as e:
             db.session.rollback()
-            return jsonify({'error': f"Error deleting summary analysis: {str(e)}"}), 500 
+            return jsonify({'error': f"Error deleting summary analysis: {str(e)}"}), 500
+
+    @app.route('/api/seeker-template', methods=['GET'])
+    def get_seeker_template():
+        try:
+            template_path = os.path.join(current_app.root_path, 'modules', 'SeekerTemplate.json')
+            with open(template_path, 'r') as f:
+                template_data = json.load(f)
+            return jsonify(template_data)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500 

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}TEAM10X - Medical Documents{% endblock %}
+{% block title %}MedicalXtractor - Document Manager{% endblock %}
 
 {% block nav_title %}Medical Documents{% endblock %}
 
@@ -53,6 +53,30 @@
     <p>or</p>
     <p>Click to select file</p>
     <input type="file" id="fileInput" accept=".pdf" style="display: none">
+</div>
+
+<!-- Updated to use card and table design -->
+<div class="card">
+    <div class="card-header">
+        <h2>Medical Documents</h2>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table" id="documentsTable">
+                <thead>
+                    <tr>
+                        <th>Document Name</th>
+                        <th>Upload Date</th>
+                        <th>Total Pages</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody id="documentsTableBody">
+                    <!-- Documents will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 <div class="loader" id="loader"></div>
@@ -153,40 +177,33 @@
         fetch(url)
             .then(response => response.json())
             .then(documents => {
-                const documentsList = document.getElementById('documentsList');
+                const documentsTableBody = document.getElementById('documentsTableBody');
                 if (documents.length === 0) {
-                    documentsList.innerHTML = '<h2>Uploaded Documents</h2><p>No documents uploaded yet.</p>';
+                    documentsTableBody.innerHTML = '<tr><td colspan="4">No documents uploaded yet.</td></tr>';
                     return;
                 }
 
-                // Calculate total pages across all documents
-                const totalPages = documents.reduce((sum, doc) => sum + doc.total_pages, 0);
-                let html = `<h2>Uploaded Documents (${documents.length} documents)</h2>`;
-                
+                let html = '';
                 documents.forEach(doc => {
                     const uploadDate = new Date(doc.upload_date).toLocaleString();
                     html += `
-                        <div class="document-item" id="doc-${doc.id}">
-                            <div>
-                                <strong>${doc.filename}</strong>
-                                <br>
-                                <small>Uploaded: ${uploadDate}</small>
-                                <br>
-                                <small>Total Pages: ${doc.total_pages}</small>
-                            </div>
-                            <div>
-                                <button onclick="viewDocument(${doc.id})">View</button>
-                                <button onclick="deleteDocument(${doc.id})" class="delete-btn">Delete</button>
-                            </div>
-                        </div>
+                        <tr id="doc-${doc.id}">
+                            <td>${doc.filename}</td>
+                            <td>${uploadDate}</td>
+                            <td>${doc.total_pages}</td>
+                            <td>
+                                <button class="btn btn-primary" onclick="viewDocument(${doc.id})">View</button>
+                                <button class="btn btn-danger" onclick="deleteDocument(${doc.id})">Delete</button>
+                            </td>
+                        </tr>
                     `;
                 });
-                documentsList.innerHTML = html;
+                documentsTableBody.innerHTML = html;
             })
             .catch(error => {
                 console.error('Error loading documents:', error);
-                const documentsList = document.getElementById('documentsList');
-                documentsList.innerHTML = '<h2>Uploaded Documents</h2><p style="color: red">Error loading documents.</p>';
+                const documentsTableBody = document.getElementById('documentsTableBody');
+                documentsTableBody.innerHTML = '<tr><td colspan="4" style="color: red">Error loading documents.</td></tr>';
             });
     }
 
@@ -249,8 +266,8 @@
             .then(response => response.json())
             .then(() => {
                 document.getElementById(`doc-${docId}`).remove();
-                if (document.querySelectorAll('.document-item').length === 0) {
-                    document.getElementById('documentsList').innerHTML = '<h2>Uploaded Documents</h2><p>No documents uploaded yet.</p>';
+                if (document.querySelectorAll('tr').length === 1) { // Only header row remains
+                    document.getElementById('documentsTableBody').innerHTML = '<tr><td colspan="4">No documents uploaded yet.</td></tr>';
                 }
             })
             .catch(error => {
