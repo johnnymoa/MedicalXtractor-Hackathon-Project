@@ -36,7 +36,7 @@ app = Flask(__name__,
 CORS(app)
 
 # Increase timeout to 10 minutes
-app.config['TIMEOUT'] = 600
+app.config['TIMEOUT'] = 3600  # 1 hour timeout in seconds
 
 # Database configuration
 app.config['SQLALCHEMY_DATABASE_URI'] =  os.getenv("DATABASE_URL")
