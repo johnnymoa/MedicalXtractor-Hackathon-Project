@@ -36,19 +36,8 @@
 {% endblock %}
 
 {% block content %}
-<div id="documentsList" class="documents-list">
-    <div class="documents-header">
-        <h2>Medical Documents</h2>
-        {% if current_user.role == 'medecin' %}
-        <button id="uploadButton" class="btn-primary" onclick="showUploadZone()" disabled>
-            <i class="fas fa-upload"></i> Upload Document
-        </button>
-        {% endif %}
-    </div>
-    <!-- Documents will be loaded here -->
-</div>
 
-<div class="drop-zone" id="dropZone" style="display: none;">
+<div class="drop-zone" id="dropZone">
     <p>Drag & Drop your medical document (PDF) here</p>
     <p>or</p>
     <p>Click to select file</p>
@@ -104,7 +93,6 @@
 
 .drop-zone {
     width: auto;
-    display: none;
     border: 2px dashed var(--border-color);
     border-radius: 8px;
     padding: 2rem;
