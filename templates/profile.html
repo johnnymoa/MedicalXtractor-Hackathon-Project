@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="profile-container">
+    <h2>Mon Profil</h2>
+    
+    <div class="profile-card">
+        <div class="profile-header">
+            <h3>Informations personnelles</h3>
+            <a href="{{ url_for('edit_profile') }}" class="btn btn-primary">Modifier</a>
+        </div>
+        
+        <div class="profile-info">
+            <div class="info-group">
+                <label>Nom :</label>
+                <span>{{ current_user.nom }}</span>
+            </div>
+            <div class="info-group">
+                <label>Prénom :</label>
+                <span>{{ current_user.prenom }}</span>
+            </div>
+            <div class="info-group">
+                <label>Email :</label>
+                <span>{{ current_user.email }}</span>
+            </div>
+            <div class="info-group">
+                <label>Organisation :</label>
+                <span>{{ current_user.organisation }}</span>
+            </div>
+            <div class="info-group">
+                <label>Rôle :</label>
+                <span>{{ current_user.role|title }}</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="profile-card">
+        <h3>Sécurité</h3>
+        <a href="{{ url_for('change_password') }}" class="btn btn-secondary">Changer le mot de passe</a>
+    </div>
+</div>
+{% endblock %} 

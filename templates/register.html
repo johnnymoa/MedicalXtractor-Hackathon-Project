@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="auth-container">
+    <h1>Inscription</h1>
+    
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for message in messages %}
+            <div class="flash-message">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    {% endwith %}
+    
+    <form class="auth-form" method="POST">
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="nom">Nom</label>
+            <input type="text" id="nom" name="nom" required>
+        </div>
+        <div class="form-group">
+            <label for="prenom">Prénom</label>
+            <input type="text" id="prenom" name="prenom" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Mot de passe</label>
+            <input type="password" id="password" name="password" required>
+        </div>
+        <button type="submit">S'inscrire</button>
+    </form>
+    
+    <div class="auth-links">
+        <a href="{{ url_for('login') }}">Déjà inscrit ? Se connecter</a>
+    </div>
+</div>
+{% endblock %} 

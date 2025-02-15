@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Hospital Centers Management</h1>
+    
+    <div class="actions mb-4">
+        <button class="btn btn-primary" onclick="showAddCenterModal()">
+            <i class="fas fa-plus"></i> Add Hospital Center
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Organization</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.prenom }} {{ user.nom }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.organisation }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-primary" onclick="editCenter({{ user.id }})">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteCenter({{ user.id }})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %} 

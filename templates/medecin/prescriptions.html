@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Prescriptions</h1>
+    
+    <div class="actions-bar">
+        <button class="btn-primary" id="openSidebar">
+            <i class="fas fa-plus"></i> Nouvelle prescription
+        </button>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Patient</th>
+                    <th>Date</th>
+                    <th>Médicaments</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prescription in prescriptions %}
+                <tr>
+                    <td>{{ prescription.patient_nom }}</td>
+                    <td>{{ prescription.date }}</td>
+                    <td>{{ prescription.medicaments }}</td>
+                    <td class="actions">
+                        <button class="btn-icon" title="Voir">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn-icon" title="Modifier">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon" title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Sidebar pour l'ajout de prescription -->
+<div class="sidebar" id="addPrescriptionSidebar">
+    <div class="sidebar-header">
+        <h2>Nouvelle prescription</h2>
+        <button class="close-btn" id="closeSidebar">&times;</button>
+    </div>
+    <div class="sidebar-content">
+        <form id="addPrescriptionForm">
+            <div class="form-group">
+                <label for="patient">Patient</label>
+                <select id="patient" name="patient" required>
+                    <option value="">Sélectionner un patient</option>
+                    {% for patient in patients %}
+                    <option value="{{ patient.id }}">{{ patient.nom }} {{ patient.prenom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="prescription_file">Document de prescription (PDF)</label>
+                <input type="file" id="prescription_file" name="prescription_file" accept=".pdf" required>
+            </div>
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" id="cancelBtn">Annuler</button>
+                <button type="submit" class="btn-primary" id="submitBtn">
+                    <span class="btn-text">Ajouter</span>
+                    <div class="loader" style="display: none;"></div>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.actions-bar {
+    margin: 20px 0;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border: none;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.table th, .table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.table th {
+    background-color: #f8f9fa;
+}
+
+.table tr:hover {
+    background-color: #f5f5f5;
+}
+
+.btn-icon {
+    background: none;
+    border: none;
+    padding: 4px 8px;
+    cursor: pointer;
+    color: #0d6efd;
+}
+
+/* Sidebar styles */
+.sidebar {
+    position: fixed;
+    top: 0;
+    right: -400px;
+    width: 400px;
+    height: 100vh;
+    background-color: white;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease;
+    z-index: 1000;
+}
+
+.sidebar.active {
+    right: 0;
+}
+
+.sidebar-header {
+    padding: 1rem;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.sidebar-content {
+    padding: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+
+.overlay.active {
+    display: block;
+}
+
+/* Loader styles */
+.loader {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ffffff;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.btn-primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('addPrescriptionSidebar');
+    const openBtn = document.getElementById('openSidebar');
+    const closeBtn = document.getElementById('closeSidebar');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const addPrescriptionForm = document.getElementById('addPrescriptionForm');
+    
+    // Créer l'overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'overlay';
+    document.body.appendChild(overlay);
+
+    function openSidebar() {
+        sidebar.classList.add('active');
+        overlay.classList.add('active');
+    }
+
+    function closeSidebar() {
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+        addPrescriptionForm.reset();
+    }
+
+    openBtn.addEventListener('click', openSidebar);
+    closeBtn.addEventListener('click', closeSidebar);
+    cancelBtn.addEventListener('click', closeSidebar);
+    overlay.addEventListener('click', closeSidebar);
+    
+    addPrescriptionForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = submitBtn.querySelector('.btn-text');
+        const loader = submitBtn.querySelector('.loader');
+        
+        // Désactiver le bouton et montrer le loader
+        submitBtn.disabled = true;
+        btnText.style.display = 'none';
+        loader.style.display = 'inline-block';
+        
+        const formData = new FormData();
+        const patientId = document.getElementById('patient').value;
+        const prescriptionFile = document.getElementById('prescription_file').files[0];
+        
+        formData.append('patient_id', patientId);
+        formData.append('file', prescriptionFile);
+        
+        fetch('/api/prescriptions', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeSidebar();
+                window.location.reload();
+            } else {
+                throw new Error(data.error || 'Erreur lors de l\'ajout de la prescription');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert(error.message || 'Erreur lors de l\'ajout de la prescription');
+        })
+        .finally(() => {
+            // Réactiver le bouton et cacher le loader
+            submitBtn.disabled = false;
+            btnText.style.display = 'inline';
+            loader.style.display = 'none';
+        });
+    });
+});
+</script>
+{% endblock %} 
