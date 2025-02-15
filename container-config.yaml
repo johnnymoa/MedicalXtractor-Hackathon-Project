@@ -1,0 +1,13 @@
+name: your-app-name
+namespace: your-namespace-name
+organization_id: 7be040c9-259f-4ed1-8847-15fc963bd144
+container:
+  image: rg.fr-par.scw.cloud/your-namespace-name/your-app-name:latest
+  port: 5000
+  environment:
+    - name: FLASK_ENV
+      value: production
+    # Ajoutez ici vos autres variables d'environnement
+  resources:
+    memory_limit: 256
+    cpu_limit: 140 
