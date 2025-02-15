@@ -125,7 +125,7 @@ def process_page_image_with_throttle(image, page_num, mistral_client):
                     print(error_msg)
                     return f"Error processing page {page_num}: {str(e)}"
 
-def process_pdf_document(file, db, Document, Page, mistral_client):
+def process_pdf_document(file, db, Document, Page, mistral_client, user_id):
     """Process a PDF document and store results in the database"""
     temp_file = None
     start_time = time.time()
@@ -150,7 +150,7 @@ def process_pdf_document(file, db, Document, Page, mistral_client):
             document = Document(
                 filename=file.filename,
                 total_pages=len(images),
-                user_id=current_user.id  # Add the current user's ID
+                user_id=user_id  # Use the provided user_id
             )
             db.session.add(document)
             db.session.flush()  # Get the document ID without committing

@@ -4,28 +4,51 @@
 
 {% block nav_title %}Medical Documents{% endblock %}
 
-{% block breadcrumb %}
-<span>/</span>
-<a href="{{ url_for('documents') }}">
+{% block page_navigation %}
+<a href="{{ url_for('documents') }}{% if current_user.role == 'medecin' %}?patient_id={{ request.args.get('patient_id') }}{% endif %}" class="active" id="documents-nav-link">
     <i class="fas fa-file-medical"></i>
-    Medical Documents
+    Documents
 </a>
-{% endblock %}
+<a href="{{ url_for('prescriptions') }}{% if current_user.role == 'medecin' %}?patient_id={{ request.args.get('patient_id') }}{% endif %}" id="prescriptions-nav-link">
+    <i class="fas fa-prescription"></i>
+    Prescriptions
+</a>
+<a href="{{ url_for('summarizer') }}{% if current_user.role == 'medecin' %}?patient_id={{ request.args.get('patient_id') }}{% endif %}" id="summarizer-nav-link">
+    <i class="fas fa-book-medical"></i>
+    Summarizer
+</a>
 
-{% block next_page %}
-<a href="{{ url_for('prescriptions') }}">
-    Next: Prescriptions
-    <i class="fas fa-arrow-right"></i>
-</a>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const links = ['documents-nav-link', 'prescriptions-nav-link', 'summarizer-nav-link'];
+        const patientId = localStorage.getItem('selectedPatientId');
+        if (patientId) {
+            links.forEach(linkId => {
+                const link = document.getElementById(linkId);
+                const url = new URL(link.href);
+                url.searchParams.delete('patient_id');
+                url.searchParams.set('patient_id', patientId);
+                link.href = url.toString();
+            });
+        }
+    });
+</script>
 {% endblock %}
 
 {% block content %}
 <div id="documentsList" class="documents-list">
-    <h2>Medical Documents</h2>
+    <div class="documents-header">
+        <h2>Medical Documents</h2>
+        {% if current_user.role == 'medecin' %}
+        <button id="uploadButton" class="btn-primary" onclick="showUploadZone()" disabled>
+            <i class="fas fa-upload"></i> Upload Document
+        </button>
+        {% endif %}
+    </div>
     <!-- Documents will be loaded here -->
 </div>
 
-<div class="drop-zone" id="dropZone">
+<div class="drop-zone" id="dropZone" style="display: none;">
     <p>Drag & Drop your medical document (PDF) here</p>
     <p>or</p>
     <p>Click to select file</p>
@@ -34,9 +57,45 @@
 
 <div class="loader" id="loader"></div>
 <div id="results"></div>
-{% endblock %}
 
-{% block scripts %}
+<style>
+.documents-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.documents-header button {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.documents-header button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.drop-zone {
+    width: auto;
+    display: none;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    margin: 2rem 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.drop-zone.dragover {
+    border-color: var(--primary-color);
+    background-color: rgba(var(--primary-color-rgb), 0.1);
+}
+</style>
+
 <script>
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
@@ -85,7 +144,13 @@
     }
 
     function loadDocuments() {
-        fetch('/api/documents')
+        // Get patient_id from localStorage if we're a doctor
+        const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+        
+        // Construct the URL with patient_id if needed
+        const url = '/api/documents' + (patientId ? `?patient_id=${patientId}` : '');
+        
+        fetch(url)
             .then(response => response.json())
             .then(documents => {
                 const documentsList = document.getElementById('documentsList');
@@ -126,10 +191,13 @@
     }
 
     function viewDocument(docId) {
+        const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+        const url = `/api/documents/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
+        
         loader.style.display = 'block';
         results.style.display = 'none';
 
-        fetch(`/api/documents/${docId}`)
+        fetch(url)
             .then(response => response.json())
             .then(data => {
                 let html = `<h2>Document: ${data.filename}</h2>`;
@@ -172,7 +240,10 @@
             return;
         }
 
-        fetch(`/api/documents/${docId}`, {
+        const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+        const url = `/api/documents/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
+
+        fetch(url, {
             method: 'DELETE'
         })
             .then(response => response.json())
@@ -196,6 +267,14 @@
 
         const formData = new FormData();
         formData.append('file', file);
+        
+        // Add patient_id to formData if we're a doctor
+        {% if current_user.role == 'medecin' %}
+        const patientId = localStorage.getItem('selectedPatientId');
+        if (patientId) {
+            formData.append('patient_id', patientId);
+        }
+        {% endif %}
 
         loader.style.display = 'block';
         results.style.display = 'none';
@@ -263,7 +342,37 @@
         });
     }
 
-    // Load documents when page loads
-    document.addEventListener('DOMContentLoaded', loadDocuments);
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if current_user.role == 'medecin' %}
+        // Enable/disable upload button based on patient selection
+        const uploadButton = document.getElementById('uploadButton');
+        const dropZone = document.getElementById('dropZone');
+        const patientSelect = document.getElementById('navPatientSelect');
+        
+        if (patientSelect) {
+            patientSelect.addEventListener('change', function() {
+                const selectedPatientId = this.value;
+                uploadButton.disabled = !selectedPatientId;
+                dropZone.style.display = 'block';
+            });
+            
+            // Check initial state
+            const savedPatientId = localStorage.getItem('selectedPatientId');
+            uploadButton.disabled = !savedPatientId;
+            dropZone.style.display = 'block';
+        }
+        {% endif %}
+        
+        // Load documents list
+        loadDocuments();
+    });
+
+    function showUploadZone() {
+        const dropZone = document.getElementById('dropZone');
+        dropZone.style.display = dropZone.style.display === 'none' ? 'block' : 'none';
+        if (dropZone.style.display === 'block') {
+            dropZone.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
 </script>
 {% endblock %}

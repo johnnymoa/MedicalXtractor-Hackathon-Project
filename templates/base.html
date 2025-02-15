@@ -21,8 +21,17 @@
   </head>
   <body>
     <nav class="navbar">
-      <h1>{% block nav_title %}TEAM10X{% endblock %}</h1>
-      <div style="display: flex; align-items: center; gap: 1rem">
+      <div class="nav-left">
+        <h1>{% block nav_title %}TEAM10X{% endblock %}</h1>
+        {% if current_user.is_authenticated and current_user.role == 'medecin' and request.endpoint != 'dashboard' %}
+        <div class="patient-nav-selector">
+          <select id="navPatientSelect" class="nav-form-select">
+            <option value="">Choose a patient...</option>
+          </select>
+        </div>
+        {% endif %}
+      </div>
+      <div class="nav-right">
         {% if current_user.is_authenticated %}
         <button
           class="theme-toggle"
@@ -36,11 +45,11 @@
           <i class="fas fa-user-cog"></i>
           Profile Settings
         </a>
-        <a href="{{ url_for('logout') }}" class="btn-logout" title="Logout">
+        <a href="{{ url_for('auth.logout') }}" class="btn-logout" title="Logout">
           <i class="fas fa-sign-out-alt"></i> Logout
         </a>
         {% else %}
-        <a href="{{ url_for('login') }}" class="nav-link">Login</a>
+        <a href="{{ url_for('auth.login') }}" class="nav-link">Login</a>
         {% endif %}
       </div>
     </nav>
@@ -52,10 +61,9 @@
           <i class="fas fa-home"></i>
           Dashboard
         </a>
-        {% block breadcrumb %}{% endblock %}
       </div>
-      <div class="next-page">
-        {% block next_page %}{% endblock %}
+      <div class="page-navigation">
+        {% block page_navigation %}{% endblock %}
       </div>
     </div>
     {% endif %}
@@ -67,6 +75,46 @@
     </footer>
 
     <style>
+      .nav-left {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+      }
+
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 2rem;
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .patient-nav-selector {
+        min-width: 250px;
+      }
+
+      .nav-form-select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 0.9rem;
+      }
+
+      .nav-form-select option {
+        background-color: var(--card-bg);
+        color: var(--text-color);
+      }
+
       .btn-logout {
         padding: 0.5rem 1rem;
         color: white;
@@ -104,7 +152,6 @@
       .breadcrumb {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
       }
 
       .breadcrumb a {
@@ -113,35 +160,48 @@
         display: flex;
         align-items: center;
         gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        transition: all 0.3s ease;
       }
 
       .breadcrumb a:hover {
-        color: var(--primary-color);
+        background-color: var(--primary-color);
+        color: white;
       }
 
       .breadcrumb i {
         font-size: 0.9rem;
       }
 
-      .breadcrumb span {
-        color: var(--text-color-secondary);
-        margin: 0 0.5rem;
+      .page-navigation {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
       }
 
-      .next-page a {
+      .page-navigation a {
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        color: var(--primary-color);
+        color: var(--text-color);
         text-decoration: none;
-        font-weight: 500;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        transition: all 0.3s ease;
       }
 
-      .next-page a:hover {
-        text-decoration: underline;
+      .page-navigation a:hover {
+        background-color: var(--primary-color);
+        color: white;
       }
 
-      .next-page i {
+      .page-navigation a.active {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .page-navigation i {
         font-size: 0.9rem;
       }
     </style>
@@ -152,6 +212,7 @@
         const themeToggle = document.getElementById("theme-toggle");
         const sunIcon = document.getElementById("sun-icon");
         const moonIcon = document.getElementById("moon-icon");
+        const navPatientSelect = document.getElementById("navPatientSelect");
 
         // Get saved theme from localStorage or use system preference
         const savedTheme = localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
@@ -176,6 +237,48 @@
         function updateIcons(theme) {
           sunIcon.style.display = theme === "dark" ? "none" : "block";
           moonIcon.style.display = theme === "dark" ? "block" : "none";
+        }
+
+        // Handle patient selector in nav if it exists
+        if (navPatientSelect) {
+          // Load patients list
+          fetch('/api/patients')
+            .then(response => response.json())
+            .then(patients => {
+              patients.forEach(patient => {
+                const option = document.createElement('option');
+                option.value = patient.id;
+                option.textContent = `${patient.prenom} ${patient.nom}`;
+                navPatientSelect.appendChild(option);
+              });
+
+              // Set the current patient from localStorage
+              const savedPatientId = localStorage.getItem('selectedPatientId');
+              if (savedPatientId) {
+                navPatientSelect.value = savedPatientId;
+              }
+            })
+            .catch(error => console.error('Error loading patients:', error));
+
+          // Handle patient selection change
+          navPatientSelect.addEventListener('change', function() {
+            const selectedPatientId = this.value;
+            
+            if (selectedPatientId) {
+              localStorage.setItem('selectedPatientId', selectedPatientId);
+              // Get current URL and create new URL object
+              const currentUrl = new URL(window.location.href);
+              // Remove any existing patient_id parameter
+              currentUrl.searchParams.delete('patient_id');
+              // Add the new patient_id
+              currentUrl.searchParams.set('patient_id', selectedPatientId);
+              window.location.href = currentUrl.toString();
+            } else {
+              localStorage.removeItem('selectedPatientId');
+              // Redirect to dashboard if no patient is selected
+              window.location.href = "{{ url_for('dashboard') }}";
+            }
+          });
         }
       });
     </script>

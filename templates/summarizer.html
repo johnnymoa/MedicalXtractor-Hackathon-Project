@@ -4,24 +4,6 @@
 
 {% block nav_title %}Medical Summarizer{% endblock %}
 
-{% block breadcrumb %}
-<span>/</span>
-<a href="{{ url_for('documents') }}">
-    <i class="fas fa-file-medical"></i>
-    Medical Documents
-</a>
-<span>/</span>
-<a href="{{ url_for('prescriptions') }}">
-    <i class="fas fa-prescription"></i>
-    Prescriptions
-</a>
-<span>/</span>
-<a href="{{ url_for('summarizer') }}">
-    <i class="fas fa-book-medical"></i>
-    Medical Summarizer
-</a>
-{% endblock %}
-
 {% block content %}
 <div class="container">
     <!-- Unanalyzed Documents List -->
@@ -159,7 +141,13 @@
     }
 
     function loadDocuments() {
-        fetch('/api/documents')
+        // Get patient_id from localStorage if we're a doctor
+        const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+        
+        // Construct the URL with patient_id if needed
+        const url = '/api/documents' + (patientId ? `?patient_id=${patientId}` : '');
+        
+        fetch(url)
             .then(response => response.json())
             .then(documents => {
                 const unanalyzedTableBody = document.getElementById('unanalyzedDocumentsTableBody');
@@ -191,7 +179,10 @@
 
     async function checkSummaryStatus(doc) {
         try {
-            const response = await fetch(`/api/analyze-summary/${doc.id}`, {
+            const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+            const url = `/api/analyze-summary/${doc.id}` + (patientId ? `?patient_id=${patientId}` : '');
+            
+            const response = await fetch(url, {
                 method: 'GET'
             });
             const data = await response.json();
@@ -247,7 +238,10 @@
         loader.style.display = 'block';
         
         try {
-            const response = await fetch(`/api/analyze-summary/${docId}`, {
+            const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+            const url = `/api/analyze-summary/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
+            
+            const response = await fetch(url, {
                 method: 'POST'
             });
             const data = await response.json();
@@ -273,7 +267,10 @@
         loader.style.display = 'block';
         
         try {
-            const response = await fetch(`/api/analyze-summary/${docId}`);
+            const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+            const url = `/api/analyze-summary/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
+            
+            const response = await fetch(url);
             const data = await response.json();
             
             if (data.error) {
@@ -281,7 +278,8 @@
             }
 
             // Get document info
-            const docResponse = await fetch(`/api/documents/${docId}`);
+            const docUrl = `/api/documents/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
+            const docResponse = await fetch(docUrl);
             const docData = await docResponse.json();
             
             // Update extractions data
@@ -311,8 +309,11 @@
         loader.style.display = 'block';
         
         try {
+            const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+            const url = `/api/analyze-summary/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
+            
             // Delete existing summary
-            await fetch(`/api/analyze-summary/${docId}`, {
+            await fetch(url, {
                 method: 'DELETE'
             });
             
@@ -336,7 +337,10 @@
         loader.style.display = 'block';
         
         try {
-            const response = await fetch(`/api/analyze-summary/${docId}`, {
+            const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+            const url = `/api/analyze-summary/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
+            
+            const response = await fetch(url, {
                 method: 'DELETE'
             });
             
@@ -442,7 +446,9 @@
 
     async function viewPage(documentId, pageNumber) {
         try {
-            const content = `<img src="/api/documents/${documentId}/pages/${pageNumber}/image" class="img-fluid" alt="Page ${pageNumber}">`;
+            const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+            const url = `/api/documents/${documentId}/pages/${pageNumber}/image` + (patientId ? `?patient_id=${patientId}` : '');
+            const content = `<img src="${url}" class="img-fluid" alt="Page ${pageNumber}">`;
             createModal(`Page ${pageNumber}`, content);
         } catch (error) {
             console.error('Error viewing page:', error);
@@ -476,5 +482,39 @@
     document.querySelector('.search-box').addEventListener('input', () => {
         updateTable();
     });
+</script>
+{% endblock %}
+
+{% block page_navigation %}
+<a href="{{ url_for('documents') }}{% if current_user.role == 'medecin' %}?patient_id={{ request.args.get('patient_id') }}{% endif %}" id="documents-nav-link">
+    <i class="fas fa-file-medical"></i>
+    Documents
+</a>
+<a href="{{ url_for('prescriptions') }}{% if current_user.role == 'medecin' %}?patient_id={{ request.args.get('patient_id') }}{% endif %}" id="prescriptions-nav-link">
+    <i class="fas fa-prescription"></i>
+    Prescriptions
+</a>
+<a href="{{ url_for('summarizer') }}{% if current_user.role == 'medecin' %}?patient_id={{ request.args.get('patient_id') }}{% endif %}" class="active" id="summarizer-nav-link">
+    <i class="fas fa-book-medical"></i>
+    Summarizer
+</a>
+
+<script>
+    // Update navigation links with patient_id from localStorage if we're a doctor
+    {% if current_user.role == 'medecin' %}
+    document.addEventListener('DOMContentLoaded', function() {
+        const links = ['documents-nav-link', 'prescriptions-nav-link', 'summarizer-nav-link'];
+        const patientId = localStorage.getItem('selectedPatientId');
+        if (patientId) {
+            links.forEach(linkId => {
+                const link = document.getElementById(linkId);
+                const url = new URL(link.href);
+                url.searchParams.delete('patient_id');
+                url.searchParams.set('patient_id', patientId);
+                link.href = url.toString();
+            });
+        }
+    });
+    {% endif %}
 </script>
 {% endblock %} 
