@@ -1,6 +1,7 @@
 {
   "patient_demographics": {
     "version": "1.0",
+    "report_style": "latest",
     "fields": [
       {
         "Field": "Full Name",
@@ -30,6 +31,7 @@
   },
   "medical_history": {
     "version": "1.0",
+    "report_style": "history",
     "fields": [
       {
         "Field": "Past Medical Conditions",
@@ -63,6 +65,7 @@
   },
   "lifestyle": {
     "version": "1.0",
+    "report_style": "latest",
     "fields": [
       {
         "Field": "Smoking Status",
@@ -86,6 +89,7 @@
   },
   "vital_signs": {
     "version": "1.0",
+    "report_style": "latest",
     "fields": [
       {
         "Field": "Weight",
@@ -133,6 +137,7 @@
   },
   "diagnostics": {
     "version": "1.0",
+    "report_style": "history",
     "fields": [
       {
         "Field": "Lab Results",
@@ -170,6 +175,7 @@
   },
   "preventive_care": {
     "version": "1.0",
+    "report_style": "history",
     "fields": [
       {
         "Field": "Vaccinations",
@@ -185,6 +191,7 @@
   },
   "treatment_and_followup": {
     "version": "1.0",
+    "report_style": "latest",
     "fields": [
       {
         "Field": "Recent Prescriptions",

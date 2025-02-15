@@ -1,37 +1,76 @@
 {% extends "base.html" %}
 
-{% block title %}TEAM10X - Prescription Manager{% endblock %}
+{% block title %}MedicalXtractor - Prescription Manager{% endblock %}
 
 {% block nav_title %}Prescription Manager{% endblock %}
 
 {% block extra_css %}
-<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.css" rel="stylesheet">
+<style>
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1050;
+}
+
+.modal {
+    position: relative;
+    background: white;
+    width: 90%;
+    max-width: 800px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin: 20px;
+}
+
+.modal-header {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h5 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    color: #666;
+}
+
+.modal-body {
+    padding: 1rem;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.modal-close:hover {
+    color: #000;
+}
+</style>
 {% endblock %}
 
 {% block content %}
-<!-- Unanalyzed Documents List -->
-<div class="card">
-    <div class="card-header">
-        <h2>Medical Documents</h2>
-        <p>Documents pending prescription analysis</p>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table" id="unanalyzedDocumentsTable">
-                <thead>
-                    <tr>
-                        <th>Document Name</th>
-                        <th>Upload Date</th>
-                        <th>Pages</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="unanalyzedDocumentsTableBody">
-                    <!-- Unanalyzed documents will be loaded here -->
-                </tbody>
-            </table>
-        </div>
-    </div>
+<h1 class="page-title">Prescription Manager</h1>
+
+<!-- Add Document button above the Analyzed Documents card -->
+<div style="margin-bottom: 15px;">
+    <button class="btn btn-success" style="margin-right: 10px;" onclick="openModal()">
+        Add Document
+    </button>
 </div>
 
 <!-- Analyzed Documents List -->
@@ -56,13 +95,40 @@
                         <th>Upload Date</th>
                         <th>Pages</th>
                         <th>Prescriptions</th>
-                        <th>Actions</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody id="analyzedDocumentsTableBody">
                     <!-- Analyzed documents will be loaded here -->
                 </tbody>
             </table>
+        </div>
+    </div>
+</div>
+
+<!-- Create your modal for Medical Documents -->
+<div id="medicalDocumentsModal" class="modal-overlay">
+    <div class="modal">
+        <div class="modal-header">
+            <h5>Medical Documents</h5>
+            <button type="button" class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="table-responsive">
+                <table class="table" id="unanalyzedDocumentsTable">
+                    <thead>
+                        <tr>
+                            <th>Document Name</th>
+                            <th>Upload Date</th>
+                            <th>Pages</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="unanalyzedDocumentsTableBody">
+                        <!-- Unanalyzed documents will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -84,13 +150,18 @@
                         <button type="button" class="btn btn-filter" data-filter="1year">1 Year</button>
                     </div>
                 </div>
-                <div class="col-6">
-                    <input type="text" class="search-box float-right" placeholder="Search medications...">
+                <div class="col-6 d-flex align-items-center justify-content-end">
+                    <button type="button" class="btn btn-secondary mr-2" 
+                            id="toggleTableViewBtn">Table View</button>
+                    <button type="button" class="btn btn-secondary mr-3" 
+                            id="toggleTimelineViewBtn">Timeline View</button>
+                    <input type="text" class="search-box" placeholder="Search medications...">
                 </div>
             </div>
         </div>
         <div class="loader" id="loader"></div>
-        <div class="table-responsive">
+        <!-- Table container (default) -->
+        <div class="table-responsive" id="tableView"> 
             <table class="table" id="prescriptionsTable">
                 <thead>
                     <tr>
@@ -104,13 +175,33 @@
                         <th>Instructions</th>
                         <th>Source Document</th>
                         <th data-sort="page">Page <i class="fas fa-sort"></i></th>
-                        <th>Actions</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody id="prescriptionsTableBody">
                     <!-- Prescriptions will be loaded here -->
                 </tbody>
             </table>
+        </div>
+
+        <!-- Timeline container (initially hidden) -->
+        <div id="timelineView" style="display: none;">
+            <div class="timeline-wrapper" style="display: flex; margin-top: 20px;">
+                <!-- Labels column -->
+                <div class="timeline-labels" style="flex: 0 0 200px; min-width: 200px; display: flex; flex-direction: column;">
+                    <!-- Prescription names will be placed here -->
+                </div>
+                
+                <!-- Timeline content -->
+                <div class="timeline-content" style="flex: 1; overflow-x: auto; position: relative; display: flex; flex-direction: column;">
+                    <!-- Years grid -->
+                    <div id="linesContainer" style="height: 40px; border-bottom: 1px solid #ccc; position: relative;">
+                    </div>
+                    <!-- Timeline bars -->
+                    <div id="timelineContainer" style="position: relative; flex: 1; display: flex; flex-direction: column;">
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -124,11 +215,15 @@
     let currentDocumentId = null;
     
     // Load documents when page loads
-    document.addEventListener('DOMContentLoaded', loadDocuments);
+    document.addEventListener('DOMContentLoaded', async () => {
+        await loadDocuments();
+        await viewAllPrescriptions(); // Show all prescriptions by default
+    });
 
     function createModal(title, content) {
         const modalOverlay = document.createElement('div');
         modalOverlay.className = 'modal-overlay';
+        modalOverlay.style.display = 'flex';  // Set display to flex immediately
         modalOverlay.innerHTML = `
             <div class="modal">
                 <div class="modal-header">
@@ -145,11 +240,13 @@
         
         const closeBtn = modalOverlay.querySelector('.modal-close');
         closeBtn.onclick = () => {
+            modalOverlay.style.display = 'none';
             document.body.removeChild(modalOverlay);
         };
         
         modalOverlay.onclick = (e) => {
             if (e.target === modalOverlay) {
+                modalOverlay.style.display = 'none';
                 document.body.removeChild(modalOverlay);
             }
         };
@@ -204,6 +301,7 @@
                         <td>${doc.total_pages}</td>
                         <td>${data.medications.length} prescriptions</td>
                         <td>
+                        <div style="display: flex; gap: 8px; align-items: center; justify-content: center;">
                             <button class="btn btn-primary" onclick="viewPrescriptions(${doc.id})">
                                 View Prescriptions
                             </button>
@@ -213,6 +311,7 @@
                             <button class="btn btn-danger" onclick="deleteAnalysis(${doc.id})">
                                 <i class="fas fa-trash"></i> Delete Analysis
                             </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -241,6 +340,7 @@
 
     async function generatePrescriptions(docId) {
         const loader = document.getElementById('loader');
+        closeModal();
         loader.style.display = 'block';
         
         try {
@@ -252,6 +352,9 @@
             if (data.error) {
                 throw new Error(data.error);
             }
+
+            // Close the modal
+            
 
             // Reload the documents to update the tables
             await loadDocuments();
@@ -431,6 +534,13 @@
         }
     }
 
+    function isActivePrescription(endDate) {
+        if (!endDate || endDate === 'Not specified') return false;
+        const today = new Date();
+        const prescriptionEndDate = new Date(endDate);
+        return prescriptionEndDate > today;
+    }
+
     function updateTable() {
         const tableBody = document.getElementById('prescriptionsTableBody');
         let filteredData = [...prescriptionsData];
@@ -480,8 +590,11 @@
         
         // Update table content
         tableBody.innerHTML = filteredData.map(med => {
+            const isActive = isActivePrescription(med.end_date);
+            const rowStyle = isActive ? 'background-color: #e0ffe0;' : '';
+            
             return `
-                <tr>
+                <tr style="${rowStyle}">
                     <td>${med.name}</td>
                     <td>${med.dosage || 'Not specified'}</td>
                     <td>${med.frequency || 'Not specified'}</td>
@@ -494,7 +607,7 @@
                     <td>${med.page_number || 'Not specified'}</td>
                     <td>
                         <button class="btn btn-sm btn-primary" onclick="viewPage(${med.documentId}, ${med.page_number})">
-                            <i class="fas fa-eye"></i> View Page
+                            View Page
                         </button>
                     </td>
                 </tr>
@@ -504,11 +617,23 @@
 
     async function viewPage(documentId, pageNumber) {
         try {
-            const content = `<img src="/api/documents/${documentId}/pages/${pageNumber}/image" class="img-fluid" alt="Page ${pageNumber}">`;
+            // First verify the image URL is accessible
+            const response = await fetch(`/api/documents/${documentId}/pages/${pageNumber}/image`);
+            if (!response.ok) {
+                throw new Error('Failed to load page image');
+            }
+            
+            const content = `
+                <div style="text-align: center;">
+                    <img src="/api/documents/${documentId}/pages/${pageNumber}/image" 
+                         class="img-fluid" 
+                         alt="Page ${pageNumber}"
+                         style="max-width: 100%; height: auto;">
+                </div>`;
             createModal(`Page ${pageNumber}`, content);
         } catch (error) {
             console.error('Error viewing page:', error);
-            alert('Error loading page image');
+            alert('Error loading page image: ' + error.message);
         }
     }
 
@@ -548,5 +673,227 @@
     document.querySelector('.search-box').addEventListener('input', () => {
         updateTable();
     });
+
+    function openModal() {
+        const modal = document.getElementById('medicalDocumentsModal');
+        modal.style.display = 'flex';  // Use flex instead of block
+        
+        // Prevent body scrolling when modal is open
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('medicalDocumentsModal');
+        modal.style.display = 'none';
+        
+        // Restore body scrolling
+        document.body.style.overflow = 'auto';
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('medicalDocumentsModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+
+    // Add timeline toggle logic
+    const toggleTableViewBtn = document.getElementById('toggleTableViewBtn');
+    const toggleTimelineViewBtn = document.getElementById('toggleTimelineViewBtn');
+    const tableView = document.getElementById('tableView');
+    const timelineView = document.getElementById('timelineView');
+
+    toggleTableViewBtn.addEventListener('click', () => {
+        tableView.style.display = 'block';
+        timelineView.style.display = 'none';
+        // Enable filter buttons
+        document.querySelectorAll('.btn-filter').forEach(btn => {
+            btn.disabled = false;
+            btn.style.opacity = '1';
+            btn.style.cursor = 'pointer';
+        });
+        updateTable();  // re-draw the table
+    });
+
+    toggleTimelineViewBtn.addEventListener('click', () => {
+        tableView.style.display = 'none';
+        timelineView.style.display = 'block';
+        // Disable filter buttons and reset to 'all'
+        document.querySelectorAll('.btn-filter').forEach(btn => {
+            btn.disabled = true;
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+            if (btn.dataset.filter === 'all') {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        currentFilter = 'all';
+        updateTimeline(); // draw the timeline
+    });
+
+    function updateTimeline() {
+        const container = document.getElementById('timelineContainer');
+        const linesContainer = document.getElementById('linesContainer');
+        const labelsContainer = document.querySelector('.timeline-labels');
+        container.innerHTML = '';
+        linesContainer.innerHTML = '';
+        labelsContainer.innerHTML = '';
+
+        // Add spacer in labels column to match years bar height
+        const labelsSpacer = document.createElement('div');
+        labelsSpacer.style.height = '40px';  // Match linesContainer height
+        labelsSpacer.style.borderBottom = '1px solid #ccc';  // Match the border of linesContainer
+        labelsContainer.appendChild(labelsSpacer);
+
+        // Filter and sort data as in updateTable()
+        let filteredData = [...prescriptionsData];
+        if (currentFilter !== 'all') {
+            filteredData = filteredData.filter(med => isWithinTimeFrame(med.start_date, currentFilter));
+        }
+        const searchTerm = document.querySelector('.search-box').value.toLowerCase();
+        if (searchTerm) {
+            filteredData = filteredData.filter(med => 
+                med.name.toLowerCase().includes(searchTerm) ||
+                med.dosage?.toLowerCase().includes(searchTerm) ||
+                med.frequency?.toLowerCase().includes(searchTerm) ||
+                med.instructions?.toLowerCase().includes(searchTerm) ||
+                med.documentName.toLowerCase().includes(searchTerm)
+            );
+        }
+
+        // Separate valid and invalid date prescriptions
+        const getTime = (dateStr) => {
+            return dateStr && dateStr !== 'Not specified' ? new Date(dateStr).getTime() : null;
+        };
+
+        const isValidDateRange = (med) => {
+            const start = getTime(med.start_date);
+            const end = getTime(med.end_date);
+            return start && end && end >= start;
+        };
+
+        const validPrescriptions = filteredData.filter(isValidDateRange);
+        const invalidPrescriptions = filteredData.filter(med => !isValidDateRange(med));
+
+        // Sort valid prescriptions by start date (most recent first)
+        validPrescriptions.sort((a, b) => {
+            const aDate = new Date(a.start_date);
+            const bDate = new Date(b.start_date);
+            return bDate - aDate;  // Reversed order for most recent first
+        });
+
+        // Sort invalid prescriptions by start date if available (most recent first)
+        invalidPrescriptions.sort((a, b) => {
+            const aDate = getTime(a.start_date) || 0;
+            const bDate = getTime(b.start_date) || 0;
+            return bDate - aDate;  // Reversed order for most recent first
+        });
+
+        // Determine date range from valid prescriptions only
+        let minDate = Infinity;
+        let maxDate = -Infinity;
+        
+        validPrescriptions.forEach(med => {
+            const start = getTime(med.start_date);
+            const end = getTime(med.end_date);
+            if (start && start < minDate) minDate = start;
+            if (end && end > maxDate) maxDate = end;
+        });
+
+        if (minDate === Infinity || maxDate === -Infinity) {
+            container.innerHTML = '<p>No valid start/end dates found to display timeline.</p>';
+            return;
+        }
+
+        // Render yearly grid lines and labels
+        const totalSpan = maxDate - minDate || 1;
+        const minYear = new Date(minDate).getFullYear();
+        const maxYear = new Date(maxDate).getFullYear();
+        
+        for (let year = minYear; year <= maxYear; year++) {
+            const yearTimestamp = new Date(year, 0, 1).getTime();
+            if (yearTimestamp < minDate) continue;
+            if (yearTimestamp > maxDate) break;
+            const fraction = (yearTimestamp - minDate) / totalSpan;
+            
+            // Vertical line
+            const lineDiv = document.createElement('div');
+            lineDiv.style.position = 'absolute';
+            lineDiv.style.left = (fraction * 100) + '%';
+            lineDiv.style.height = '100%';
+            lineDiv.style.width = '1px';
+            lineDiv.style.backgroundColor = '#ccc';
+            linesContainer.appendChild(lineDiv);
+
+            // Year label
+            const labelDiv = document.createElement('div');
+            labelDiv.innerHTML = year;
+            labelDiv.style.position = 'absolute';
+            labelDiv.style.left = (fraction * 100) + '%';
+            labelDiv.style.transform = 'translateX(-50%)';
+            labelDiv.style.fontWeight = 'bold';
+            linesContainer.appendChild(labelDiv);
+        }
+
+        // Function to create a row (either with or without a bar)
+        const createRow = (med, hasBar = true) => {
+            const ROW_HEIGHT = '40px';  // Increased height for better visibility
+
+            // Create label in labels column
+            const labelDiv = document.createElement('div');
+            labelDiv.textContent = `${med.name || 'Unknown'}`;
+            labelDiv.title = `${med.name || 'Unknown'} (${med.start_date || '??'} - ${med.end_date || '??'})`;
+            labelDiv.style.height = ROW_HEIGHT;
+            labelDiv.style.lineHeight = ROW_HEIGHT;  // Center text vertically
+            labelDiv.style.padding = '0 5px';  // Adjusted padding
+            labelDiv.style.whiteSpace = 'nowrap';
+            labelDiv.style.overflow = 'hidden';
+            labelDiv.style.textOverflow = 'ellipsis';
+            labelDiv.style.borderBottom = '1px solid #eee';
+            labelDiv.style.display = 'flex';
+            labelDiv.style.alignItems = 'center';  // Center text vertically
+            if (!hasBar) {
+                labelDiv.style.color = '#999';
+                labelDiv.style.fontStyle = 'italic';
+            }
+            labelsContainer.appendChild(labelDiv);
+
+            // Create timeline row
+            const rowDiv = document.createElement('div');
+            rowDiv.style.height = ROW_HEIGHT;
+            rowDiv.style.position = 'relative';
+            rowDiv.style.borderBottom = '1px solid #eee';
+            rowDiv.style.flex = '0 0 auto';  // Prevent row from stretching
+
+            if (hasBar) {
+                const start = getTime(med.start_date);
+                const end = getTime(med.end_date);
+                const barDiv = document.createElement('div');
+                const fractionStart = (start - minDate) / totalSpan;
+                const fractionWidth = ((end - start) || 0) / totalSpan;
+                barDiv.style.position = 'absolute';
+                barDiv.style.left = (fractionStart * 100) + '%';
+                barDiv.style.width = (fractionWidth * 100) + '%';
+                barDiv.style.height = '24px';  // Slightly smaller than row height
+                barDiv.style.top = '8px';  // Center bar vertically
+                barDiv.style.background = '#007bff';
+                barDiv.style.opacity = '0.5';
+                barDiv.style.borderRadius = '4px';
+                rowDiv.appendChild(barDiv);
+            }
+
+            container.appendChild(rowDiv);
+        };
+
+        // Render valid prescriptions
+        validPrescriptions.forEach(med => createRow(med, true));
+
+        // Render invalid prescriptions without separator
+        if (invalidPrescriptions.length > 0) {
+            invalidPrescriptions.forEach(med => createRow(med, false));
+        }
+    }
 </script>
 {% endblock %} 
