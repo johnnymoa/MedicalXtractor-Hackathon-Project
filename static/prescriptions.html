@@ -14,17 +14,53 @@
     </nav>
 
     <div class="container">
-        <!-- Documents List -->
+        <!-- Unanalyzed Documents List -->
         <div class="card">
             <div class="card-header">
                 <h2>Medical Documents</h2>
+                <p>Documents pending prescription analysis</p>
             </div>
             <div class="card-body">
-                <div class="mb-3">
-                    <button class="btn btn-primary" onclick="viewAllPrescriptions()">View All Prescriptions</button>
+                <div class="table-responsive">
+                    <table class="table" id="unanalyzedDocumentsTable">
+                        <thead>
+                            <tr>
+                                <th>Document Name</th>
+                                <th>Upload Date</th>
+                                <th>Pages</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unanalyzedDocumentsTableBody">
+                            <!-- Unanalyzed documents will be loaded here -->
+                        </tbody>
+                    </table>
                 </div>
-                <div id="documentsList">
-                    <!-- Documents will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Analyzed Documents List -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Analyzed Documents</h2>
+                <p>Documents with extracted prescriptions</p>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table" id="analyzedDocumentsTable">
+                        <thead>
+                            <tr>
+                                <th>Document Name</th>
+                                <th>Upload Date</th>
+                                <th>Pages</th>
+                                <th>Prescriptions</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="analyzedDocumentsTableBody">
+                            <!-- Analyzed documents will be loaded here -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -121,68 +157,80 @@
             fetch('/api/documents')
                 .then(response => response.json())
                 .then(documents => {
-                    const documentsList = document.getElementById('documentsList');
+                    const unanalyzedTableBody = document.getElementById('unanalyzedDocumentsTableBody');
+                    const analyzedTableBody = document.getElementById('analyzedDocumentsTableBody');
+                    
                     if (documents.length === 0) {
-                        documentsList.innerHTML = '<p>No documents uploaded yet.</p>';
+                        unanalyzedTableBody.innerHTML = '<tr><td colspan="4">No documents uploaded yet.</td></tr>';
+                        analyzedTableBody.innerHTML = '<tr><td colspan="5">No analyzed documents available.</td></tr>';
                         return;
                     }
 
-                    let html = '';
+                    // Clear existing content
+                    unanalyzedTableBody.innerHTML = '';
+                    analyzedTableBody.innerHTML = '';
+
+                    // Process each document
                     documents.forEach(doc => {
-                        const uploadDate = new Date(doc.upload_date).toLocaleString();
-                        html += `
-                            <div class="document-item" id="doc-${doc.id}">
-                                <div>
-                                    <strong>${doc.filename}</strong>
-                                    <br>
-                                    <small>Uploaded: ${uploadDate} - ${doc.total_pages} pages</small>
-                                </div>
-                                <div class="button-group">
-                                    <button class="btn btn-primary view-btn" style="display: none;" onclick="viewPrescriptions(${doc.id})">View Prescriptions</button>
-                                    <button class="btn btn-success generate-btn" onclick="generatePrescriptions(${doc.id})">Generate Prescriptions</button>
-                                    <button class="btn btn-refresh refresh-btn" style="display: none;" onclick="refreshPrescriptions(${doc.id})">
-                                        <i class="fas fa-sync-alt"></i> Refresh Analysis
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    documentsList.innerHTML = html;
-                    
-                    // Check which documents have prescriptions
-                    documents.forEach(doc => {
-                        checkPrescriptionStatus(doc.id);
+                        checkPrescriptionStatus(doc);
                     });
                 })
                 .catch(error => {
                     console.error('Error loading documents:', error);
-                    document.getElementById('documentsList').innerHTML = 
-                        '<p style="color: red">Error loading documents.</p>';
+                    document.getElementById('unanalyzedDocumentsTableBody').innerHTML = 
+                        '<tr><td colspan="4" style="color: red">Error loading documents.</td></tr>';
+                    document.getElementById('analyzedDocumentsTableBody').innerHTML = 
+                        '<tr><td colspan="5" style="color: red">Error loading documents.</td></tr>';
                 });
         }
 
-        async function checkPrescriptionStatus(docId) {
+        async function checkPrescriptionStatus(doc) {
             try {
-                const response = await fetch(`/api/analyze-prescription/${docId}`, {
-                    method: 'POST'
+                const response = await fetch(`/api/analyze-prescription/${doc.id}`, {
+                    method: 'GET'
                 });
                 const data = await response.json();
+                const uploadDate = new Date(doc.upload_date).toLocaleString();
                 
-                const docElement = document.getElementById(`doc-${docId}`);
-                const viewBtn = docElement.querySelector('.view-btn');
-                const generateBtn = docElement.querySelector('.generate-btn');
-                const refreshBtn = docElement.querySelector('.refresh-btn');
-                
-                if (!data.error && data.medications) {
-                    viewBtn.style.display = 'inline-block';
-                    refreshBtn.style.display = 'inline-block';
-                    generateBtn.style.display = 'none';
-                    docElement.classList.add('analyzed');
+                if (response.ok && data.medications) {
+                    // Document has been analyzed
+                    const analyzedTableBody = document.getElementById('analyzedDocumentsTableBody');
+                    const row = `
+                        <tr>
+                            <td>${doc.filename}</td>
+                            <td>${uploadDate}</td>
+                            <td>${doc.total_pages}</td>
+                            <td>${data.medications.length} prescriptions</td>
+                            <td>
+                                <button class="btn btn-primary" onclick="viewPrescriptions(${doc.id})">
+                                    View Prescriptions
+                                </button>
+                                <button class="btn btn-refresh" onclick="refreshPrescriptions(${doc.id})">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                                <button class="btn btn-danger" onclick="deleteAnalysis(${doc.id})">
+                                    <i class="fas fa-trash"></i> Delete Analysis
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    analyzedTableBody.innerHTML += row;
                 } else {
-                    viewBtn.style.display = 'none';
-                    refreshBtn.style.display = 'none';
-                    generateBtn.style.display = 'inline-block';
-                    docElement.classList.remove('analyzed');
+                    // Document has not been analyzed
+                    const unanalyzedTableBody = document.getElementById('unanalyzedDocumentsTableBody');
+                    const row = `
+                        <tr>
+                            <td>${doc.filename}</td>
+                            <td>${uploadDate}</td>
+                            <td>${doc.total_pages}</td>
+                            <td>
+                                <button class="btn btn-success" onclick="generatePrescriptions(${doc.id})">
+                                    Extract Prescriptions
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    unanalyzedTableBody.innerHTML += row;
                 }
             } catch (error) {
                 console.error('Error checking prescription status:', error);
@@ -326,6 +374,41 @@
             } catch (error) {
                 console.error('Error refreshing prescriptions:', error);
                 alert(`Error refreshing prescriptions: ${error.message}`);
+            } finally {
+                loader.style.display = 'none';
+            }
+        }
+
+        async function deleteAnalysis(docId) {
+            if (!confirm('Are you sure you want to delete this prescription analysis? This action cannot be undone.')) {
+                return;
+            }
+
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+            
+            try {
+                // Delete the analysis
+                const response = await fetch(`/api/analyze-prescription/${docId}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to delete analysis');
+                }
+
+                // Clear the prescriptions table if we're currently viewing this document's prescriptions
+                if (currentDocumentId === docId) {
+                    prescriptionsData = [];
+                    updateTable();
+                }
+
+                // Reload the documents to update the tables
+                loadDocuments();
+                
+            } catch (error) {
+                console.error('Error deleting analysis:', error);
+                alert(`Error deleting analysis: ${error.message}`);
             } finally {
                 loader.style.display = 'none';
             }
