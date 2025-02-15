@@ -8,6 +8,14 @@ from dotenv import load_dotenv
 from modules.document_processor import process_pdf_document
 from modules.prescription_processor import PrescriptionAgent, process_prescription_analysis
 import json
+import tempfile
+import io
+from PIL import Image
+import base64
+import fitz  # PyMuPDF
+from concurrent.futures import ThreadPoolExecutor
+import time
+from threading import Semaphore
 import dateutil.parser
 import base64
 from io import BytesIO
@@ -211,4 +219,4 @@ def get_page_image(doc_id, page_number):
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=8080)
