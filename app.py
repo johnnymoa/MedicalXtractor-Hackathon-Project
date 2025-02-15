@@ -30,6 +30,7 @@ class Page(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     page_number = db.Column(db.Integer, nullable=False)
     content = db.Column(db.Text, nullable=False)
+    image_data = db.Column(db.Text)  # Store base64 encoded image
     document_id = db.Column(db.Integer, db.ForeignKey('document.id'), nullable=False)
 
 # Create database tables
@@ -66,7 +67,8 @@ def get_document(doc_id):
         'total_pages': document.total_pages,
         'pages': [{
             'page_number': page.page_number,
-            'content': page.content
+            'content': page.content,
+            'image_data': page.image_data
         } for page in document.pages]
     })
 
