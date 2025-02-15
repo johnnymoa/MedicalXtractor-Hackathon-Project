@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}TEAM10X - Medical Document Management System{% endblock %}
+
+{% block nav_title %}TEAM10X{% endblock %}
+
+{% block nav_links %}{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h2>Welcome to TEAM10X</h2>
+    <p>Your comprehensive medical document management and assistance platform designed for healthcare professionals.</p>
+</section>
+
+<div class="features-grid">
+    <a href="{{ url_for('documents') }}" class="feature-card">
+        <h3>Document Manager</h3>
+        <p>Digitize and securely store your medical documents in an organized system for easy access and management.</p>
+    </a>
+    
+    <a href="{{ url_for('prescriptions') }}" class="feature-card">
+        <h3>Prescription Manager</h3>
+        <p>Track and manage prescriptions with an interactive timeline view, monitor active medications, and analyze prescription history.</p>
+    </a>
+
+    <a href="{{ url_for('summarizer') }}" class="feature-card">
+        <h3>Medical Summarizer</h3>
+        <p>Extract specific information from your digitized documents to automatically fill customizable templates with relevant medical data.</p>
+    </a>
+</div>
+{% endblock %}

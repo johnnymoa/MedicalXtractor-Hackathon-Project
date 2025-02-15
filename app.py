@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, send_file
+from flask import Flask, request, jsonify, send_from_directory, send_file, render_template, url_for
 from flask_cors import CORS
 from mistralai import Mistral
 from flask_sqlalchemy import SQLAlchemy
@@ -23,7 +23,10 @@ from io import BytesIO
 # Load environment variables from .env file
 load_dotenv()
 
-app = Flask(__name__, static_url_path='/static')
+app = Flask(__name__, 
+    static_url_path='/static',
+    template_folder='templates'  # Explicitly set the template folder
+)
 CORS(app)
 
 # Database configuration
@@ -105,7 +108,19 @@ prescription_agent = PrescriptionAgent(mistral_client)
 
 @app.route('/')
 def index():
-    return send_from_directory('static', 'index.html')
+    return render_template('index.html')
+
+@app.route('/documents')
+def documents():
+    return render_template('documents.html')
+
+@app.route('/prescriptions')
+def prescriptions():
+    return render_template('prescriptions.html')
+
+@app.route('/summarizer')
+def summarizer():
+    return render_template('summarizer.html')
 
 @app.route('/api/documents', methods=['GET'])
 def get_documents():
