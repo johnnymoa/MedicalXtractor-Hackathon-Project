@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>User Management</h1>
+    
+    <div class="actions mb-4">
+        <button class="btn btn-primary" onclick="showAddUserModal()">
+            <i class="fas fa-plus"></i> Add User
+        </button>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('admin')">Administrators</button>
+        <button class="tab-btn" onclick="switchTab('regional')">Regional Centers</button>
+        <button class="tab-btn" onclick="switchTab('hospital')">Hospital Centers</button>
+        <button class="tab-btn" onclick="switchTab('service')">Hospital Services</button>
+        <button class="tab-btn" onclick="switchTab('cabinet')">Medical Offices</button>
+        <button class="tab-btn" onclick="switchTab('doctor')">Doctors</button>
+        <button class="tab-btn" onclick="switchTab('patient')">Patients</button>
+    </div>
+
+    <!-- Admin Tab -->
+    <div id="admin" class="tab-content active">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Organization</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users if user.role == 'admin' %}
+                    <tr>
+                        <td>{{ user.prenom }} {{ user.nom }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.organisation }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-primary" onclick="editUser({{ user.id }})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Regional Centers Tab -->
+    <div id="regional" class="tab-content">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Organization</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users if user.role == 'centre_regional' %}
+                    <tr>
+                        <td>{{ user.prenom }} {{ user.nom }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.organisation }}</td>
+                        <td>
+                            <div class="btn-group">
+                                <button class="btn btn-sm btn-primary" onclick="editUser({{ user.id }})">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <a href="{{ url_for('impersonate_user', user_id=user.id) }}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-user-secret"></i>
+                                </a>
+                                <button class="btn btn-sm btn-danger" onclick="deleteUser({{ user.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Repeat similar structure for other roles -->
+    <!-- Hospital Centers Tab -->
+    <div id="hospital" class="tab-content">
+        <!-- Similar table structure for hospital centers -->
+    </div>
+
+    <!-- Hospital Services Tab -->
+    <div id="service" class="tab-content">
+        <!-- Similar table structure for services -->
+    </div>
+
+    <!-- Medical Offices Tab -->
+    <div id="cabinet" class="tab-content">
+        <!-- Similar table structure for medical offices -->
+    </div>
+
+    <!-- Doctors Tab -->
+    <div id="doctor" class="tab-content">
+        <!-- Similar table structure for doctors -->
+    </div>
+
+    <!-- Patients Tab -->
+    <div id="patient" class="tab-content">
+        <!-- Similar table structure for patients -->
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal" id="addUserModal">
+    <!-- Modal content here -->
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal" id="editUserModal">
+    <!-- Modal content here -->
+</div>
+
+<style>
+.tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+}
+
+.tab-btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    border-radius: 4px;
+    white-space: nowrap;
+    color: var(--text-color);
+}
+
+.tab-btn:hover {
+    background-color: var(--hover-bg);
+}
+
+.tab-btn.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.tab-content {
+    display: none;
+    padding: 1rem;
+    background: var(--background-color);
+    border-radius: 4px;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.btn-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background: var(--background-color);
+    margin: 15% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 8px;
+}
+</style>
+
+<script>
+function switchTab(tabId) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Deactivate all tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    
+    // Show selected tab content
+    document.getElementById(tabId).classList.add('active');
+    
+    // Activate selected tab button
+    document.querySelector(`[onclick="switchTab('${tabId}')"]`).classList.add('active');
+}
+
+function showAddUserModal() {
+    // Implement modal show logic
+}
+
+function editUser(userId) {
+    // Implement edit logic
+}
+
+function deleteUser(userId) {
+    if (confirm('Are you sure you want to delete this user?')) {
+        // Implement delete logic
+    }
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Mon Dossier Médical</h2>
+    
+    <div class="medical-record">
+        <div class="section">
+            <h3>Informations personnelles</h3>
+            <div class="info-group">
+                <label>Nom :</label>
+                <span>{{ current_user.nom }}</span>
+            </div>
+            <div class="info-group">
+                <label>Prénom :</label>
+                <span>{{ current_user.prenom }}</span>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h3>Historique médical</h3>
+            <p>En cours de développement...</p>
+        </div>
+        
+        <div class="section">
+            <h3>Ordonnances récentes</h3>
+            <p>En cours de développement...</p>
+        </div>
+    </div>
+</div>
+{% endblock %} 
