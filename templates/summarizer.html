@@ -5,16 +5,458 @@
 {% block nav_title %}Medical Summarizer{% endblock %}
 
 {% block content %}
-<div class="coming-soon">
-    <h2>Medical Summarizer</h2>
-    <p>We're developing an advanced AI-powered medical document summarizer.</p>
-    <p>This feature will provide:</p>
-    <ul style="list-style: none; padding: 0;">
-        <li>Quick summaries of medical records</li>
-        <li>Key findings extraction</li>
-        <li>Important medical terms highlighting</li>
-        <li>Automated report generation</li>
-    </ul>
-    <p>Coming Soon!</p>
+<div class="container">
+    <!-- Unanalyzed Documents List -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Medical Documents</h2>
+            <p>Documents pending summary analysis</p>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table" id="unanalyzedDocumentsTable">
+                    <thead>
+                        <tr>
+                            <th>Document Name</th>
+                            <th>Upload Date</th>
+                            <th>Pages</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="unanalyzedDocumentsTableBody">
+                        <!-- Unanalyzed documents will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analyzed Documents List -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Analyzed Documents</h2>
+            <p>Documents with extracted summaries</p>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table" id="analyzedDocumentsTable">
+                    <thead>
+                        <tr>
+                            <th>Document Name</th>
+                            <th>Upload Date</th>
+                            <th>Pages</th>
+                            <th>Extractions</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="analyzedDocumentsTableBody">
+                        <!-- Analyzed documents will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extractions View -->
+    <div class="card">
+        <div class="card-header">
+            <h2>Medical Information Extractions</h2>
+        </div>
+        <div class="card-body">
+            <div class="filter-row">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="button-group">
+                            <button type="button" class="btn btn-filter active" data-filter="all">All Categories</button>
+                            <div id="categoryFilters">
+                                <!-- Category filters will be added here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <input type="text" class="search-box float-right" placeholder="Search extractions...">
+                    </div>
+                </div>
+            </div>
+            <div class="loader" id="loader"></div>
+            <div class="table-responsive">
+                <table class="table" id="extractionsTable">
+                    <thead>
+                        <tr>
+                            <th data-sort="category">Category <i class="fas fa-sort"></i></th>
+                            <th data-sort="field">Field <i class="fas fa-sort"></i></th>
+                            <th data-sort="value">Value <i class="fas fa-sort"></i></th>
+                            <th data-sort="associatedDate">Associated Date <i class="fas fa-sort"></i></th>
+                            <th data-sort="extractionDate">Extraction Date <i class="fas fa-sort"></i></th>
+                            <th data-sort="page">Page <i class="fas fa-sort"></i></th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="extractionsTableBody">
+                        <!-- Extractions will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    let extractionsData = [];
+    let currentSort = { column: null, direction: 'asc' };
+    let currentFilter = 'all';
+    let currentDocumentId = null;
+    let categories = new Set();
+    
+    // Load documents when page loads
+    document.addEventListener('DOMContentLoaded', loadDocuments);
+
+    function createModal(title, content) {
+        const modalOverlay = document.createElement('div');
+        modalOverlay.className = 'modal-overlay';
+        modalOverlay.innerHTML = `
+            <div class="modal">
+                <div class="modal-header">
+                    <h5>${title}</h5>
+                    <button type="button" class="modal-close">&times;</button>
+                </div>
+                <div class="modal-body">
+                    ${content}
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modalOverlay);
+        
+        const closeBtn = modalOverlay.querySelector('.modal-close');
+        closeBtn.onclick = () => {
+            document.body.removeChild(modalOverlay);
+        };
+        
+        modalOverlay.onclick = (e) => {
+            if (e.target === modalOverlay) {
+                document.body.removeChild(modalOverlay);
+            }
+        };
+    }
+
+    function loadDocuments() {
+        fetch('/api/documents')
+            .then(response => response.json())
+            .then(documents => {
+                const unanalyzedTableBody = document.getElementById('unanalyzedDocumentsTableBody');
+                const analyzedTableBody = document.getElementById('analyzedDocumentsTableBody');
+                
+                if (documents.length === 0) {
+                    unanalyzedTableBody.innerHTML = '<tr><td colspan="4">No documents uploaded yet.</td></tr>';
+                    analyzedTableBody.innerHTML = '<tr><td colspan="5">No analyzed documents available.</td></tr>';
+                    return;
+                }
+
+                // Clear existing content
+                unanalyzedTableBody.innerHTML = '';
+                analyzedTableBody.innerHTML = '';
+
+                // Process each document
+                documents.forEach(doc => {
+                    checkSummaryStatus(doc);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading documents:', error);
+                document.getElementById('unanalyzedDocumentsTableBody').innerHTML = 
+                    '<tr><td colspan="4" style="color: red">Error loading documents.</td></tr>';
+                document.getElementById('analyzedDocumentsTableBody').innerHTML = 
+                    '<tr><td colspan="5" style="color: red">Error loading documents.</td></tr>';
+            });
+    }
+
+    async function checkSummaryStatus(doc) {
+        try {
+            const response = await fetch(`/api/analyze-summary/${doc.id}`, {
+                method: 'GET'
+            });
+            const data = await response.json();
+            const uploadDate = new Date(doc.upload_date).toLocaleString();
+            
+            if (response.ok && data.extractions) {
+                // Document has been analyzed
+                const analyzedTableBody = document.getElementById('analyzedDocumentsTableBody');
+                const row = `
+                    <tr>
+                        <td>${doc.filename}</td>
+                        <td>${uploadDate}</td>
+                        <td>${doc.total_pages}</td>
+                        <td>${data.extractions.length} extractions</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="viewExtractions(${doc.id})">
+                                View Extractions
+                            </button>
+                            <button class="btn btn-refresh" onclick="refreshSummary(${doc.id})">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                            <button class="btn btn-danger" onclick="deleteSummary(${doc.id})">
+                                <i class="fas fa-trash"></i> Delete Analysis
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                analyzedTableBody.innerHTML += row;
+            } else {
+                // Document has not been analyzed
+                const unanalyzedTableBody = document.getElementById('unanalyzedDocumentsTableBody');
+                const row = `
+                    <tr>
+                        <td>${doc.filename}</td>
+                        <td>${uploadDate}</td>
+                        <td>${doc.total_pages}</td>
+                        <td>
+                            <button class="btn btn-success" onclick="generateSummary(${doc.id})">
+                                Extract Summary
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                unanalyzedTableBody.innerHTML += row;
+            }
+        } catch (error) {
+            console.error('Error checking summary status:', error);
+        }
+    }
+
+    async function generateSummary(docId) {
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
+        
+        try {
+            const response = await fetch(`/api/analyze-summary/${docId}`, {
+                method: 'POST'
+            });
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            // Update tables and view extractions
+            loadDocuments();
+            await viewExtractions(docId);
+            
+        } catch (error) {
+            console.error('Error generating summary:', error);
+            alert(`Error generating summary: ${error.message}`);
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
+
+    async function viewExtractions(docId) {
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
+        
+        try {
+            const response = await fetch(`/api/analyze-summary/${docId}`);
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            // Get document info
+            const docResponse = await fetch(`/api/documents/${docId}`);
+            const docData = await docResponse.json();
+            
+            // Update extractions data
+            extractionsData = data.extractions;
+            
+            // Update categories
+            categories = new Set(extractionsData.map(ext => ext.category));
+            updateCategoryFilters();
+            
+            // Update table
+            updateTable();
+            
+        } catch (error) {
+            console.error('Error viewing extractions:', error);
+            alert(`Error viewing extractions: ${error.message}`);
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
+
+    async function refreshSummary(docId) {
+        if (!confirm('Are you sure you want to refresh this summary? This will delete the current analysis and generate a new one.')) {
+            return;
+        }
+
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
+        
+        try {
+            // Delete existing summary
+            await fetch(`/api/analyze-summary/${docId}`, {
+                method: 'DELETE'
+            });
+            
+            // Generate new summary
+            await generateSummary(docId);
+            
+        } catch (error) {
+            console.error('Error refreshing summary:', error);
+            alert(`Error refreshing summary: ${error.message}`);
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
+
+    async function deleteSummary(docId) {
+        if (!confirm('Are you sure you want to delete this summary analysis? This action cannot be undone.')) {
+            return;
+        }
+
+        const loader = document.getElementById('loader');
+        loader.style.display = 'block';
+        
+        try {
+            const response = await fetch(`/api/analyze-summary/${docId}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to delete summary');
+            }
+
+            // Clear the extractions table if we're currently viewing this document's extractions
+            if (currentDocumentId === docId) {
+                extractionsData = [];
+                updateTable();
+            }
+
+            // Reload the documents to update the tables
+            loadDocuments();
+            
+        } catch (error) {
+            console.error('Error deleting summary:', error);
+            alert(`Error deleting summary: ${error.message}`);
+        } finally {
+            loader.style.display = 'none';
+        }
+    }
+
+    function updateCategoryFilters() {
+        const filterContainer = document.getElementById('categoryFilters');
+        filterContainer.innerHTML = Array.from(categories).map(category => `
+            <button type="button" class="btn btn-filter" data-filter="${category}">
+                ${category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+            </button>
+        `).join('');
+        
+        // Add click handlers
+        document.querySelectorAll('.btn-filter').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                updateTable();
+            });
+        });
+    }
+
+    function updateTable() {
+        const tableBody = document.getElementById('extractionsTableBody');
+        let filteredData = [...extractionsData];
+        
+        // Apply category filter
+        if (currentFilter !== 'all') {
+            filteredData = filteredData.filter(ext => ext.category === currentFilter);
+        }
+        
+        // Apply search filter
+        const searchTerm = document.querySelector('.search-box').value.toLowerCase();
+        if (searchTerm) {
+            filteredData = filteredData.filter(ext => 
+                ext.category.toLowerCase().includes(searchTerm) ||
+                ext.field.toLowerCase().includes(searchTerm) ||
+                ext.value.toLowerCase().includes(searchTerm)
+            );
+        }
+        
+        // Apply sorting
+        if (currentSort.column) {
+            filteredData.sort((a, b) => {
+                let aVal = a[currentSort.column === 'associatedDate' ? 'associated_date' : 
+                           currentSort.column === 'extractionDate' ? 'extraction_date' :
+                           currentSort.column === 'page' ? 'page_number' :
+                           currentSort.column] || '';
+                let bVal = b[currentSort.column === 'associatedDate' ? 'associated_date' : 
+                           currentSort.column === 'extractionDate' ? 'extraction_date' :
+                           currentSort.column === 'page' ? 'page_number' :
+                           currentSort.column] || '';
+                
+                if (currentSort.column.includes('Date')) {
+                    aVal = aVal ? new Date(aVal) : new Date(0);
+                    bVal = bVal ? new Date(bVal) : new Date(0);
+                }
+                
+                if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        
+        // Update table content
+        tableBody.innerHTML = filteredData.map(ext => `
+            <tr>
+                <td>${ext.category}</td>
+                <td>${ext.field}</td>
+                <td>${ext.value}</td>
+                <td>${ext.associated_date || 'Not specified'}</td>
+                <td>${new Date(ext.extraction_date).toLocaleString()}</td>
+                <td>${ext.page_number}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary" onclick="viewPage(${currentDocumentId}, ${ext.page_number})">
+                        <i class="fas fa-eye"></i> View Page
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    async function viewPage(documentId, pageNumber) {
+        try {
+            const content = `<img src="/api/documents/${documentId}/pages/${pageNumber}/image" class="img-fluid" alt="Page ${pageNumber}">`;
+            createModal(`Page ${pageNumber}`, content);
+        } catch (error) {
+            console.error('Error viewing page:', error);
+            alert('Error loading page image');
+        }
+    }
+
+    // Add event listeners for sorting
+    document.querySelectorAll('th[data-sort]').forEach(th => {
+        th.addEventListener('click', () => {
+            const column = th.dataset.sort;
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'asc';
+            }
+            
+            // Update sort icons
+            document.querySelectorAll('th[data-sort] i').forEach(icon => {
+                icon.className = 'fas fa-sort';
+            });
+            const icon = th.querySelector('i');
+            icon.className = `fas fa-sort-${currentSort.direction === 'asc' ? 'up' : 'down'}`;
+            
+            updateTable();
+        });
+    });
+
+    // Add event listener for search
+    document.querySelector('.search-box').addEventListener('input', () => {
+        updateTable();
+    });
+</script>
 {% endblock %} 
