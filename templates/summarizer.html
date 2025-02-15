@@ -4,6 +4,24 @@
 
 {% block nav_title %}Medical Summarizer{% endblock %}
 
+{% block breadcrumb %}
+<span>/</span>
+<a href="{{ url_for('documents') }}">
+    <i class="fas fa-file-medical"></i>
+    Medical Documents
+</a>
+<span>/</span>
+<a href="{{ url_for('prescriptions') }}">
+    <i class="fas fa-prescription"></i>
+    Prescriptions
+</a>
+<span>/</span>
+<a href="{{ url_for('summarizer') }}">
+    <i class="fas fa-book-medical"></i>
+    Medical Summarizer
+</a>
+{% endblock %}
+
 {% block content %}
 <div class="container">
     <!-- Unanalyzed Documents List -->

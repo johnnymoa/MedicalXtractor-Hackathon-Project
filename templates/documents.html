@@ -1,8 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}TEAM10X - Document Manager{% endblock %}
+{% block title %}TEAM10X - Medical Documents{% endblock %}
 
-{% block nav_title %}Document Manager{% endblock %}
+{% block nav_title %}Medical Documents{% endblock %}
+
+{% block breadcrumb %}
+<span>/</span>
+<a href="{{ url_for('documents') }}">
+    <i class="fas fa-file-medical"></i>
+    Medical Documents
+</a>
+{% endblock %}
+
+{% block next_page %}
+<a href="{{ url_for('prescriptions') }}">
+    Next: Prescriptions
+    <i class="fas fa-arrow-right"></i>
+</a>
+{% endblock %}
 
 {% block content %}
 <div id="documentsList" class="documents-list">

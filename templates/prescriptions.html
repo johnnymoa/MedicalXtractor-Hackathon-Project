@@ -1,8 +1,28 @@
 {% extends "base.html" %}
 
-{% block title %}TEAM10X - Prescription Manager{% endblock %}
+{% block title %}TEAM10X - Prescriptions{% endblock %}
 
-{% block nav_title %}Prescription Manager{% endblock %}
+{% block nav_title %}Prescriptions{% endblock %}
+
+{% block breadcrumb %}
+<span>/</span>
+<a href="{{ url_for('documents') }}">
+    <i class="fas fa-file-medical"></i>
+    Medical Documents
+</a>
+<span>/</span>
+<a href="{{ url_for('prescriptions') }}">
+    <i class="fas fa-prescription"></i>
+    Prescriptions
+</a>
+{% endblock %}
+
+{% block next_page %}
+<a href="{{ url_for('summarizer') }}">
+    Next: Medical Summarizer
+    <i class="fas fa-arrow-right"></i>
+</a>
+{% endblock %}
 
 {% block extra_css %}
 <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.0.0/css/all.css" rel="stylesheet">

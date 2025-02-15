@@ -32,17 +32,33 @@
           <i class="fas fa-sun" id="sun-icon"></i>
           <i class="fas fa-moon" id="moon-icon"></i>
         </button>
+        <a href="{{ url_for('profile') }}" class="nav-link">
+          <i class="fas fa-user-cog"></i>
+          Profile Settings
+        </a>
         <a href="{{ url_for('logout') }}" class="btn-logout" title="Logout">
           <i class="fas fa-sign-out-alt"></i> Logout
         </a>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="nav-link">Login</a>
         {% endif %}
-        {% block nav_links %}
-        {% if request.endpoint != 'dashboard' %}
-        <a href="{{ url_for('index') }}">Back to Dashboard</a>
-        {% endif %}
-        {% endblock %}
       </div>
     </nav>
+
+    {% if current_user.is_authenticated and request.endpoint != 'dashboard' %}
+    <div class="breadcrumb-container">
+      <div class="breadcrumb">
+        <a href="{{ url_for('dashboard') }}">
+          <i class="fas fa-home"></i>
+          Dashboard
+        </a>
+        {% block breadcrumb %}{% endblock %}
+      </div>
+      <div class="next-page">
+        {% block next_page %}{% endblock %}
+      </div>
+    </div>
+    {% endif %}
 
     <div class="container">{% block content %}{% endblock %}</div>
 
@@ -74,6 +90,59 @@
         cursor: pointer;
         padding: 0.5rem;
         font-size: 1.2rem;
+      }
+
+      .breadcrumb-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 2rem;
+        background-color: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .breadcrumb a {
+        color: var(--text-color);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .breadcrumb a:hover {
+        color: var(--primary-color);
+      }
+
+      .breadcrumb i {
+        font-size: 0.9rem;
+      }
+
+      .breadcrumb span {
+        color: var(--text-color-secondary);
+        margin: 0 0.5rem;
+      }
+
+      .next-page a {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .next-page a:hover {
+        text-decoration: underline;
+      }
+
+      .next-page i {
+        font-size: 0.9rem;
       }
     </style>
 

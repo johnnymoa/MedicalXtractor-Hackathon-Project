@@ -36,6 +36,7 @@ from flask import session
 from routes.document_routes import init_document_routes
 from routes.prescription_routes import init_prescription_routes
 from routes.summary_routes import init_summary_routes
+from routes.auth_routes import init_auth_routes
 
 # Load environment variables from .env file
 load_dotenv()
@@ -50,54 +51,63 @@ app.config['TIMEOUT'] = 3600  # 1 hour timeout in seconds
 # Obtenir le chemin absolu du dossier de l'application
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-# Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL")
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'votre-cle-secrete')
-
-# Mistral client configuration
-mistral_api_key = os.getenv("MISTRAL_API_KEY")
-mistral_client = Mistral(api_key=mistral_api_key)
-
-# Initialize routes
-init_document_routes(app, db, Document, Page, process_pdf_document, mistral_client)
-init_prescription_routes(app, db, Document, PrescriptionAnalysis, Medication, PrescriptionAgent, process_prescription_analysis, mistral_client)
-init_summary_routes(app, db, Document, DocumentSummary, SummaryExtraction, process_document_summary, mistral_client)
-# Initialiser l'agent de prescription
-prescription_agent = PrescriptionAgent(mistral_client)
-
-# Initialisation des extensions
+# Configure Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
-login_manager.login_view = 'login'
+login_manager.login_view = 'auth.login'
+login_manager.login_message_category = 'info'
 
-# Configuration email
+# Configure Flask-Mail
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 mail = Mail(app)
 
-# Initialize extensions
-db.init_app(app)  # Initialize SQLAlchemy with app
+# Configure Flask-SQLAlchemy
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'your-secret-key')
 
-# Create database tables
-with app.app_context():
-    db.create_all()
+# Initialize database
+db.init_app(app)
 
+# Initialize Mistral client
+mistral_client = Mistral(api_key=os.getenv('MISTRAL_API_KEY'))
+
+# Initialize prescription agent
+prescription_agent = PrescriptionAgent(mistral_client)
+
+# User loader for Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
     try:
-        # Get impersonation info from session
-        impersonating_id = session.get('impersonating_user_id')
-        
-        # If we're impersonating and not stopping impersonation
-        if impersonating_id and request.endpoint != 'stop_impersonating':
-            impersonated_user = User.query.get(int(impersonating_id))
-            if impersonated_user:
-                return impersonated_user
-            
-        # Otherwise, load the real user
         return User.query.get(int(user_id))
     except Exception as e:
         print(f"Error in load_user: {str(e)}")
         return None
+
+# Role-based access control decorator
+def role_required(*roles):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated:
+                return redirect(url_for('auth.login'))
+            if current_user.role not in roles:
+                flash('You do not have permission to access this page.', 'error')
+                return redirect(url_for('dashboard'))
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+# Initialize routes
+init_document_routes(app, db, Document, Page, process_pdf_document, mistral_client)
+init_prescription_routes(app, db, Document, PrescriptionAnalysis, Medication, prescription_agent, process_prescription_analysis, mistral_client)
+init_summary_routes(app, db, Document, DocumentSummary, SummaryExtraction, process_document_summary, mistral_client)
+init_auth_routes(app)
 
 @app.route('/')
 def index():
@@ -105,17 +115,31 @@ def index():
         return redirect(url_for('dashboard'))
     return render_template('index.html')
 
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    return render_template('dashboard.html')
+
 @app.route('/documents')
+@login_required
 def documents():
     return render_template('documents.html')
 
 @app.route('/prescriptions')
+@login_required
 def prescriptions():
     return render_template('prescriptions.html')
 
-@app.route('/summarizer')
-def summarizer():
-    return render_template('summarizer.html')
+@app.route('/profile')
+@login_required
+def profile():
+    return render_template('profile.html')
+
+@app.route('/admin/users')
+@login_required
+@role_required('admin', 'centre_regional', 'centre_hospitalier', 'service_hospitalier', 'cabinet_medical')
+def admin_users():
+    return render_template('admin/users.html')
 
 @app.route('/credits')
 def credits():
@@ -150,52 +174,9 @@ def logout():
     logout_user()
     return redirect(url_for('login'))
 
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    try:
-        if current_user.role == 'patient':
-            # Vérifier si l'utilisateur est un patient (a une entrée dans la table Patient)
-            patient_record = Patient.query.filter_by(user_id=current_user.id).first()
-            if not patient_record:
-                flash('Vous n\'êtes pas encore associé à un médecin')
-                return render_template('dashboard.html')
-            
-            # Récupérer les documents récents
-            recent_documents = Document.query.filter_by(patient_id=patient_record.id)\
-                                    .order_by(Document.upload_date.desc())\
-                                    .limit(5)\
-                                    .all()
-            
-            # Récupérer les prescriptions actives
-            active_prescriptions = []
-            prescriptions = PrescriptionAnalysis.query\
-                .join(Document)\
-                .filter(Document.patient_id == patient_record.id)\
-                .order_by(PrescriptionAnalysis.analysis_date.desc())\
-                .all()
-            
-            for prescription in prescriptions:
-                for medication in prescription.medications:
-                    if medication.end_date and medication.end_date >= datetime.now().date():
-                        active_prescriptions.append(medication)
-            
-            return render_template('dashboard.html',
-                                 recent_documents=recent_documents,
-                                 active_prescriptions=active_prescriptions[:5])
-        
-        elif current_user.role == 'medecin':
-            # Récupérer la liste des patients du médecin
-            patient_records = Patient.query.filter_by(doctor_id=current_user.id).all()
-            patients = [record.user for record in patient_records]  # Obtenir les utilisateurs patients
-            return render_template('dashboard.html', patients=patients)
-        
-        return render_template('dashboard.html')
-        
-    except Exception as e:
-        print(f"Error in dashboard: {str(e)}")
-        flash('Error loading dashboard')
-        return redirect(url_for('login'))
+@app.route('/summarizer')
+def summarizer():
+    return render_template('summarizer.html')
 
 # Création d'un décorateur pour vérifier les rôles
 def role_required(role):
@@ -321,18 +302,12 @@ def create_prescription():
             if not patient_record:
                 return jsonify({'error': 'No patient record found for current user'}), 404
 
-        # Get the doctor
-        doctor = User.query.get(patient_record.doctor_id)
-        if not doctor:
-            return jsonify({'error': 'Doctor not found'}), 404
-
         # Create document with file data
         file_data = file.read()
         document = Document(
             filename=file.filename,
             data=file_data,
-            patient_id=patient_record.id,
-            medecin_id=doctor.id
+            user_id=current_user.id  # Always set to current user
         )
         db.session.add(document)
         db.session.commit()
@@ -413,7 +388,7 @@ def update_prescription(id):
 @role_required(ROLES['PATIENT'])
 def my_prescriptions():
     try:
-        # Find patient record using user_id instead of email
+        # Find patient record using user_id
         patient = Patient.query.filter_by(user_id=current_user.id).first()
         if not patient:
             return render_template('patient/prescriptions.html', 
@@ -421,7 +396,7 @@ def my_prescriptions():
                                  documents=[])
 
         # Récupérer les documents
-        documents = Document.query.filter_by(patient_id=patient.id)\
+        documents = Document.query.filter_by(user_id=current_user.id)\
                                 .order_by(Document.upload_date.desc())\
                                 .all()
 
@@ -429,7 +404,7 @@ def my_prescriptions():
         prescriptions = (
             PrescriptionAnalysis.query
             .join(Document)
-            .filter(Document.patient_id == patient.id)
+            .filter(Document.user_id == current_user.id)
             .order_by(PrescriptionAnalysis.analysis_date.desc())
             .all()
         )
@@ -474,11 +449,6 @@ def mes_rendez_vous():
 @role_required(ROLES['PATIENT'])
 def mon_dossier():
     return render_template('patient/dossier.html')
-
-@app.route('/profile')
-@login_required
-def profile():
-    return render_template('profile.html')
 
 @app.route('/profile/edit', methods=['GET', 'POST'])
 @login_required
@@ -702,12 +672,6 @@ def stop_impersonating():
     return redirect(url_for('dashboard'))
 
 # Routes pour la gestion des utilisateurs selon le rôle
-@app.route('/admin/users')
-@admin_required
-def admin_users():
-    users = User.query.all()
-    return render_template('admin/users.html', users=users)
-
 @app.route('/regional/users')
 @role_required(ROLES['CENTRE_REGIONAL'])
 def regional_users():
@@ -750,14 +714,14 @@ def get_patient_data(patient_id):
             return jsonify({'error': 'Patient not found'}), 404
 
         # Récupérer les documents du patient
-        documents = Document.query.filter_by(patient_id=patient_record.id)\
+        documents = Document.query.filter_by(user_id=patient_record.user_id)\
             .order_by(Document.upload_date.desc())\
             .all()
         
         # Récupérer les prescriptions actives
         prescriptions = PrescriptionAnalysis.query\
             .join(Document)\
-            .filter(Document.patient_id == patient_record.id)\
+            .filter(Document.user_id == patient_record.user_id)\
             .order_by(PrescriptionAnalysis.analysis_date.desc())\
             .all()
 
@@ -795,4 +759,6 @@ def get_patient_data(patient_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(debug=True, port=8080, host='0.0.0.0')
