@@ -91,8 +91,8 @@
                         <th data-sort="dosage">Dosage <i class="fas fa-sort"></i></th>
                         <th data-sort="frequency">Frequency <i class="fas fa-sort"></i></th>
                         <th data-sort="startDate">Start Date <i class="fas fa-sort"></i></th>
-                        <th data-sort="duration">Duration <i class="fas fa-sort"></i></th>
-                        <th>Original Duration</th>
+                        <th>Duration</th>
+                        <th data-sort="duration">Presumed Duration <i class="fas fa-sort"></i></th>
                         <th data-sort="endDate">Presumed End Date <i class="fas fa-sort"></i></th>
                         <th>Instructions</th>
                         <th>Source Document</th>
@@ -246,17 +246,9 @@
                 throw new Error(data.error);
             }
 
-            // Update button visibility
-            const docElement = document.getElementById(`doc-${docId}`);
-            const viewBtn = docElement.querySelector('.view-btn');
-            const generateBtn = docElement.querySelector('.generate-btn');
-            const refreshBtn = docElement.querySelector('.refresh-btn');
+            // Reload the documents to update the tables
+            await loadDocuments();
             
-            viewBtn.style.display = 'inline-block';
-            refreshBtn.style.display = 'inline-block';
-            generateBtn.style.display = 'none';
-            docElement.classList.add('analyzed');
-
             // Get document info and update prescriptions table
             await viewPrescriptions(docId);
             
