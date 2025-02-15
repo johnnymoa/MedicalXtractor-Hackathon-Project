@@ -1,15 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}TEAM10X - Medical Document Management System{% endblock %}
+{% block title %}MedicalXtractor - Medical Document Management System{% endblock %}
 
 {% block nav_title %}TEAM10X{% endblock %}
 
 {% block nav_links %}{% endblock %}
 
 {% block content %}
-<div class="hero-section">
-    <h1>Bienvenue sur TEAM10X</h1>
-    <p>La plateforme de gestion médicale innovante</p>
+<div class="hero-section">   <h2>Welcome to MedicalXtractor</h2>
+    <p>Your comprehensive medical document management and assistance platform designed for healthcare professionals.</p>
+
     <div class="cta-buttons">
         <a href="{{ url_for('auth.login') }}" class="btn-primary">Se connecter</a>
         <a href="{{ url_for('auth.register') }}" class="btn-secondary">S'inscrire</a>
