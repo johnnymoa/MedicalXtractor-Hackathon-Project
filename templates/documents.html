@@ -79,7 +79,10 @@
                     return;
                 }
 
-                let html = '<h2>Uploaded Documents</h2>';
+                // Calculate total pages across all documents
+                const totalPages = documents.reduce((sum, doc) => sum + doc.total_pages, 0);
+                let html = `<h2>Uploaded Documents (${documents.length} documents)</h2>`;
+                
                 documents.forEach(doc => {
                     const uploadDate = new Date(doc.upload_date).toLocaleString();
                     html += `
@@ -87,7 +90,9 @@
                             <div>
                                 <strong>${doc.filename}</strong>
                                 <br>
-                                <small>Uploaded: ${uploadDate} - ${doc.total_pages} pages</small>
+                                <small>Uploaded: ${uploadDate}</small>
+                                <br>
+                                <small>Total Pages: ${doc.total_pages}</small>
                             </div>
                             <div>
                                 <button onclick="viewDocument(${doc.id})">View</button>
@@ -114,7 +119,10 @@
             .then(data => {
                 let html = `<h2>Document: ${data.filename}</h2>`;
                 
-                data.pages.forEach(page => {
+                // Sort pages by page number
+                const sortedPages = data.pages.sort((a, b) => a.page_number - b.page_number);
+                
+                sortedPages.forEach(page => {
                     html += `
                         <div class="page">
                             <div class="page-header">Page ${page.page_number}</div>
@@ -176,13 +184,26 @@
 
         loader.style.display = 'block';
         results.style.display = 'none';
+        
+        // Add timeout of 5 minutes (300000ms)
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 300000);
 
         fetch('/api/process-pdf', {
             method: 'POST',
-            body: formData
+            body: formData,
+            signal: controller.signal
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                loader.style.display = 'none';
+                results.style.display = 'block';
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
+            clearTimeout(timeout);
             loader.style.display = 'none';
             results.style.display = 'block';
             
@@ -216,9 +237,14 @@
             loadDocuments();
         })
         .catch(error => {
+            clearTimeout(timeout);
             loader.style.display = 'none';
             results.style.display = 'block';
-            results.innerHTML = `<p style="color: red">Error: ${error.message}</p>`;
+            if (error.name === 'AbortError') {
+                results.innerHTML = `<p style="color: red">Error: Upload timed out after 5 minutes. Please try again with a smaller file or check your connection.</p>`;
+            } else {
+                results.innerHTML = `<p style="color: red">Error: ${error.message}</p>`;
+            }
         });
     }
 
