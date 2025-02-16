@@ -833,6 +833,78 @@ def analyze_summary(doc_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/documents/<int:doc_id>/delete-with-analyses', methods=['DELETE'])
+@login_required
+def delete_document_with_analyses(doc_id):
+    """Delete a document and all its associated analyses"""
+    try:
+        document = Document.query.get_or_404(doc_id)
+        
+        # Verify permissions
+        if current_user.role == 'medecin':
+            patient_id = request.args.get('patient_id')
+            if not patient_id:
+                return jsonify({'error': 'Patient ID is required'}), 400
+            patient = Patient.query.filter_by(id=patient_id, doctor_id=current_user.id).first()
+            if not patient or document.user_id != patient.user_id:
+                return jsonify({'error': 'Access denied'}), 403
+        elif current_user.role == 'patient' and document.user_id != current_user.id:
+            return jsonify({'error': 'Access denied'}), 403
+
+        print(f"Starting deletion process for document {doc_id}")
+        
+        # First, get all related records
+        prescription = PrescriptionAnalysis.query.filter_by(document_id=doc_id).first()
+        summary = DocumentSummary.query.filter_by(document_id=doc_id).first()
+        
+        # Delete medications if they exist
+        if prescription:
+            print(f"Deleting medications for prescription {prescription.id}")
+            Medication.query.filter_by(prescription_id=prescription.id).delete()
+            db.session.flush()
+        
+        # Delete prescription analysis
+        if prescription:
+            print(f"Deleting prescription analysis {prescription.id}")
+            db.session.delete(prescription)
+            db.session.flush()
+        
+        # Delete summary extractions
+        if summary:
+            print(f"Deleting summary extractions for summary {summary.id}")
+            SummaryExtraction.query.filter_by(summary_id=summary.id).delete()
+            db.session.flush()
+        
+        # Delete summary
+        if summary:
+            print(f"Deleting summary {summary.id}")
+            db.session.delete(summary)
+            db.session.flush()
+        
+        # Delete pages
+        print(f"Deleting pages for document {doc_id}")
+        Page.query.filter_by(document_id=doc_id).delete()
+        db.session.flush()
+        
+        # Refresh the document from the database
+        db.session.refresh(document)
+        
+        # Delete the document
+        print(f"Deleting document {doc_id}")
+        db.session.delete(document)
+        
+        # Final commit
+        db.session.commit()
+        print(f"Successfully deleted document {doc_id} and all related records")
+        
+        return jsonify({'message': 'Document and associated analyses deleted successfully'})
+        
+    except Exception as e:
+        db.session.rollback()
+        error_msg = str(e)
+        print(f"Error deleting document {doc_id}: {error_msg}")
+        return jsonify({'error': error_msg}), 500
+
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

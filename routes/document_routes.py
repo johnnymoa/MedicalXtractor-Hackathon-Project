@@ -122,4 +122,37 @@ def init_document_routes(app, db, Document, Page, process_pdf_document, mistral_
             )
             
         except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+    @app.route('/api/documents/<int:doc_id>/pages/<int:page_number>', methods=['PUT'])
+    def update_page_content(doc_id, page_number):
+        """Update the content of a specific page"""
+        try:
+            # Verify permissions
+            document = Document.query.get_or_404(doc_id)
+            if current_user.role == 'medecin':
+                patient_id = request.args.get('patient_id')
+                if not patient_id:
+                    return jsonify({'error': 'Patient ID is required'}), 400
+                patient = Patient.query.filter_by(id=patient_id, doctor_id=current_user.id).first()
+                if not patient or document.user_id != patient.user_id:
+                    return jsonify({'error': 'Access denied'}), 403
+            elif current_user.role == 'patient' and document.user_id != current_user.id:
+                return jsonify({'error': 'Access denied'}), 403
+
+            # Get the page
+            page = Page.query.filter_by(document_id=doc_id, page_number=page_number).first_or_404()
+            
+            # Update content
+            content = request.json.get('content')
+            if content is None:
+                return jsonify({'error': 'Content is required'}), 400
+                
+            page.content = content
+            db.session.commit()
+            
+            return jsonify({'message': 'Page content updated successfully'})
+            
+        except Exception as e:
+            db.session.rollback()
             return jsonify({'error': str(e)}), 500 
