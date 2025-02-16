@@ -69,7 +69,7 @@ class PrescriptionAnalysis(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     document_id = db.Column(db.Integer, db.ForeignKey('document.id'))
     analysis_date = db.Column(db.DateTime, default=datetime.utcnow)
-    medications = db.relationship('Medication', backref='prescription')
+    medications = db.relationship('Medication', backref='prescription', cascade='all, delete-orphan')
 
 class Medication(db.Model):
     id = db.Column(db.Integer, primary_key=True)

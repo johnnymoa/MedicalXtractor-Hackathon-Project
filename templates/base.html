@@ -22,7 +22,11 @@
   <body>
     <nav class="navbar">
       <div class="nav-left">
-        <h1>MedicalXtractor</h1>
+        <h1>
+          <a href="{% if current_user.is_authenticated %}{{ url_for('dashboard') }}{% else %}{{ url_for('index') }}{% endif %}" style="text-decoration: none; color: inherit;">
+            MedicalXtractor
+          </a>
+        </h1>
         {% if current_user.is_authenticated and current_user.role == 'medecin' and request.endpoint != 'dashboard' %}
         <div class="patient-nav-selector">
           <select id="navPatientSelect" class="nav-form-select">
@@ -35,9 +39,6 @@
         {% if current_user.is_authenticated %}
       </div>
       <div class="nav-right">
-        <a href="{{ url_for('documents') }}">Documents</a>
-        <a href="{{ url_for('prescriptions') }}">Prescriptions</a>
-        <a href="{{ url_for('summarizer') }}">Summaries</a>
         <button
           class="theme-toggle"
           id="theme-toggle"

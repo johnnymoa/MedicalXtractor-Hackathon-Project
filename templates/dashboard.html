@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}TEAM10X - Dashboard{% endblock %}
+{% block title %}MedicalXtractor - Dashboard{% endblock %}
 
 {% block nav_title %}Dashboard{% endblock %}
 
@@ -78,7 +78,7 @@
             </div>
             <h3>Medical Documents</h3>
             <p>Upload and manage medical documents</p>
-            <a href="{{ url_for('documents') }}" class="btn-primary" {% if current_user.role == 'medecin' %}disabled{% endif %} id="documents-link">View Documents</a>
+            <a href="{{ url_for('documents') }}" class="btn-primary" {% if current_user.role == 'medecin' %}disabled{% endif %} id="documents-link" data-base-url="{{ url_for('documents') }}">View Documents</a>
         </div>
 
         <div class="feature-card {% if current_user.role == 'medecin' %}disabled{% endif %}" id="prescriptions-card">
@@ -87,7 +87,7 @@
             </div>
             <h3>Prescriptions</h3>
             <p>Analyze and manage prescriptions</p>
-            <a href="{{ url_for('prescriptions') }}" class="btn-primary" {% if current_user.role == 'medecin' %}disabled{% endif %} id="prescriptions-link">View Prescriptions</a>
+            <a href="{{ url_for('prescriptions') }}" class="btn-primary" {% if current_user.role == 'medecin' %}disabled{% endif %} id="prescriptions-link" data-base-url="{{ url_for('prescriptions') }}">View Prescriptions</a>
         </div>
 
         <div class="feature-card {% if current_user.role == 'medecin' %}disabled{% endif %}" id="summarizer-card">
@@ -96,7 +96,7 @@
             </div>
             <h3>Medical Summarizer</h3>
             <p>Generate summaries from medical documents</p>
-            <a href="{{ url_for('summarizer') }}" class="btn-primary" {% if current_user.role == 'medecin' %}disabled{% endif %} id="summarizer-link">View Summaries</a>
+            <a href="{{ url_for('summarizer') }}" class="btn-primary" {% if current_user.role == 'medecin' %}disabled{% endif %} id="summarizer-link" data-base-url="{{ url_for('summarizer') }}">View Summaries</a>
         </div>
 
         {% if current_user.role in ['admin', 'centre_regional', 'centre_hospitalier', 'service_hospitalier', 'cabinet_medical'] %}
@@ -440,22 +440,30 @@ document.addEventListener('DOMContentLoaded', function() {
     patientSelect.addEventListener('change', function() {
         const selectedPatientId = this.value;
         const cards = document.querySelectorAll('.feature-card');
-        const links = document.querySelectorAll('.btn-primary');
 
         if (selectedPatientId) {
             // Enable cards and update links with patient_id parameter
             cards.forEach(card => card.classList.remove('disabled'));
-            document.getElementById('documents-link').href = `${document.getElementById('documents-link').getAttribute('href')}?patient_id=${selectedPatientId}`;
-            document.getElementById('prescriptions-link').href = `${document.getElementById('prescriptions-link').getAttribute('href')}?patient_id=${selectedPatientId}`;
-            document.getElementById('summarizer-link').href = `${document.getElementById('summarizer-link').getAttribute('href')}?patient_id=${selectedPatientId}`;
+            
+            // Update links using URLSearchParams
+            ['documents-link', 'prescriptions-link', 'summarizer-link'].forEach(linkId => {
+                const link = document.getElementById(linkId);
+                const baseUrl = link.getAttribute('data-base-url');
+                const url = new URL(baseUrl, window.location.origin);
+                url.searchParams.set('patient_id', selectedPatientId);
+                link.href = url.toString();
+            });
             
             // Store selected patient ID in localStorage
             localStorage.setItem('selectedPatientId', selectedPatientId);
         } else {
             // Disable cards and remove patient_id parameter
             cards.forEach(card => card.classList.add('disabled'));
-            links.forEach(link => {
-                link.href = link.href.split('?')[0];
+            
+            // Reset links to their base URLs
+            ['documents-link', 'prescriptions-link', 'summarizer-link'].forEach(linkId => {
+                const link = document.getElementById(linkId);
+                link.href = link.getAttribute('data-base-url');
             });
             
             // Remove selected patient ID from localStorage

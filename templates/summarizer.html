@@ -27,6 +27,9 @@
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     margin: 20px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-header {
@@ -35,6 +38,11 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    background: white;
+    border-radius: 8px 8px 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 1;
 }
 
 .modal-header h5 {
@@ -52,13 +60,80 @@
 }
 
 .modal-body {
-    padding: 1rem;
-    max-height: 70vh;
+    padding: 1.5rem 1rem;
     overflow-y: auto;
+    position: relative;
+    background: white;
+    margin-top: 0;
+    height: calc(90vh - 4rem);
+    display: initial;
 }
 
 .modal-close:hover {
     color: #000;
+}
+
+/* Beta Ribbon Style */
+.ribbon-wrapper {
+    position: relative;
+    overflow: hidden;
+}
+
+.ribbon {
+    position: absolute;
+    right: -5px;
+    top: -5px;
+    z-index: 1;
+    overflow: hidden;
+    width: 75px;
+    height: 75px;
+    text-align: right;
+}
+
+.ribbon span {
+    font-size: 14px;
+    font-weight: bold;
+    color: #FFF;
+    text-transform: uppercase;
+    text-align: center;
+    line-height: 20px;
+    transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+    width: 100px;
+    display: block;
+    background: #dc3545;
+    box-shadow: 0 3px 10px -5px rgba(0, 0, 0, 1);
+    position: absolute;
+    top: 19px;
+    right: -21px;
+}
+
+.ribbon span::before {
+    content: "";
+    position: absolute;
+    left: 0px;
+    top: 100%;
+    z-index: -1;
+    border-left: 3px solid #8F0808;
+    border-right: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    border-top: 3px solid #8F0808;
+}
+
+.ribbon span::after {
+    content: "";
+    position: absolute;
+    right: 0px;
+    top: 100%;
+    z-index: -1;
+    border-left: 3px solid transparent;
+    border-right: 3px solid #8F0808;
+    border-bottom: 3px solid transparent;
+    border-top: 3px solid #8F0808;
+}
+
+.table-responsive {
+    margin-top: 0;
 }
 </style>
 {% endblock %}
@@ -134,27 +209,40 @@
     </div>
 
     <!-- Extractions View -->
-    <div class="card">
+    <div class="card ribbon-wrapper">
+        <div class="ribbon"><span>BETA</span></div>
         <div class="card-header">
             <h2>Medical Information Extractions</h2>
         </div>
         <div class="card-body">
             <div class="filter-row">
-                <div class="row">
-                    <div class="col-6">
-                        <div class="button-group">
-                            <button type="button" class="btn btn-filter active" data-filter="all">All Categories</button>
-                            <div id="categoryFilters">
-                                <!-- Category filters will be added here -->
-                            </div>
+                <div class="mb-3">
+                    <div class="button-group">
+                        <button type="button" class="btn btn-primary active" data-filter="all">All Categories</button>
+                        <div id="categoryFilters" class="d-inline-block">
+                            <!-- Category filters will be added here -->
                         </div>
                     </div>
-                    <div class="col-6 d-flex align-items-center justify-content-end">
-                        <button type="button" class="btn btn-secondary mr-2" 
-                                id="toggleTableViewBtn">Table View</button>
-                        <button type="button" class="btn btn-secondary mr-3" 
-                                id="toggleReportViewBtn">Report View</button>
-                        <input type="text" class="search-box float-right" placeholder="Search extractions...">
+                </div>
+                <hr class="my-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="col-6">
+                        <div class="d-flex align-items-center">
+                            <button type="button" class="btn btn-primary active" 
+                                    id="toggleTableViewBtn" style="margin-right: 8px;">Table View</button>
+                            <button type="button" class="btn btn-secondary" 
+                                    id="toggleReportViewBtn">Report View</button>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="input-group">
+                            <input type="text" class="form-control search-box" placeholder="Search extractions...">
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="button" onclick="performSearch()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -188,12 +276,13 @@
 
 <script>
     let extractionsData = [];
-    let currentSort = { column: null, direction: 'asc' };
+    let tableSort = { column: 'category', direction: 'asc' };  // Changed to ascending
+    let reportSort = { column: 'category', direction: 'asc' };  // Changed to ascending
     let currentFilter = 'all';
     let currentDocumentId = null;
     let categories = new Set();
-    let templateData = null; // Will store the SeekerTemplate data
-    let historyData = new Map(); // Add this at the top with other let declarations
+    let templateData = null;
+    let historyData = new Map();
     
     // Add view mode toggle variables
     const toggleTableViewBtn = document.getElementById('toggleTableViewBtn');
@@ -205,16 +294,20 @@
     toggleTableViewBtn.addEventListener('click', () => {
         tableView.style.display = 'block';
         reportView.style.display = 'none';
-        toggleTableViewBtn.classList.add('active');
-        toggleReportViewBtn.classList.remove('active');
+        toggleTableViewBtn.classList.remove('btn-secondary');
+        toggleTableViewBtn.classList.add('active', 'btn-primary');
+        toggleReportViewBtn.classList.remove('active', 'btn-primary');
+        toggleReportViewBtn.classList.add('btn-secondary');
         updateTable();
     });
 
     toggleReportViewBtn.addEventListener('click', () => {
         tableView.style.display = 'none';
         reportView.style.display = 'block';
-        toggleTableViewBtn.classList.remove('active');
-        toggleReportViewBtn.classList.add('active');
+        toggleReportViewBtn.classList.remove('btn-secondary');
+        toggleReportViewBtn.classList.add('active', 'btn-primary');
+        toggleTableViewBtn.classList.remove('active', 'btn-primary');
+        toggleTableViewBtn.classList.add('btn-secondary');
         updateReport();
     });
     
@@ -487,16 +580,22 @@
     function updateCategoryFilters() {
         const filterContainer = document.getElementById('categoryFilters');
         filterContainer.innerHTML = Array.from(categories).map(category => `
-            <button type="button" class="btn btn-filter" data-filter="${category}">
+            <button type="button" class="btn btn-secondary" style="margin-bottom: 8px; margin-right: 4px;" data-filter="${category}">
                 ${category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </button>
         `).join('');
         
         // Add click handlers
-        document.querySelectorAll('.btn-filter').forEach(btn => {
+        document.querySelectorAll('.btn-filter, [data-filter]').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
+                // Remove active class and primary color from all buttons
+                document.querySelectorAll('.btn-filter, [data-filter]').forEach(b => {
+                    b.classList.remove('active', 'btn-primary');
+                    b.classList.add('btn-secondary');
+                });
+                // Add active class and primary color to clicked button
+                btn.classList.remove('btn-secondary');
+                btn.classList.add('active', 'btn-primary');
                 currentFilter = btn.dataset.filter;
                 updateTable();
             });
@@ -504,7 +603,7 @@
     }
 
     // Function to format value for display
-    function formatValue(value, field) {
+    function formatValue(value, field, truncate = false) {
         try {
             // If value is already an object, stringify it
             if (typeof value === 'object' && value !== null) {
@@ -517,12 +616,15 @@
                 parsedValue = JSON.parse(value);
             } catch (e) {
                 // If it's not JSON, return as is
+                if (truncate) {
+                    return truncateText(value, field);
+                }
                 return value;
             }
 
             // Handle arrays
             if (Array.isArray(parsedValue)) {
-                return parsedValue.map(item => {
+                const formattedArray = parsedValue.map(item => {
                     if (typeof item === 'object' && item !== null) {
                         // Format each object in the array
                         return Object.entries(item)
@@ -531,20 +633,93 @@
                     }
                     return `<div class="ml-3">${item}</div>`;
                 }).join('');
+                
+                if (truncate) {
+                    return truncateText(formattedArray, field);
+                }
+                return formattedArray;
             }
 
             // Handle objects
             if (typeof parsedValue === 'object' && parsedValue !== null) {
-                return Object.entries(parsedValue)
+                const formattedObject = Object.entries(parsedValue)
                     .map(([key, val]) => `<div class="ml-3"><strong>${key}:</strong> ${val}</div>`)
                     .join('');
+                
+                if (truncate) {
+                    return truncateText(formattedObject, field);
+                }
+                return formattedObject;
             }
 
+            if (truncate) {
+                return truncateText(value, field);
+            }
             return value;
         } catch (e) {
             console.error('Error formatting value:', e);
-            return value;
+            return truncate ? truncateText(value, field) : value;
         }
+    }
+
+    function stripHtml(html) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        return tmp.textContent || tmp.innerText || '';
+    }
+
+    function truncateText(text, field) {
+        const maxLength = 100;
+        if (!text) return text;
+
+        // Si le texte contient du HTML
+        if (text.includes('<')) {
+            const plainText = stripHtml(text);
+            if (plainText.length <= maxLength) {
+                return text;
+            }
+            return `<div class="truncated-text">
+                <div>${plainText.substring(0, maxLength)}...</div>
+                <button class="btn btn-link btn-sm see-more-btn" data-full-text="${encodeURIComponent(text)}" data-field="${field}">
+                    See more
+                </button>
+            </div>`;
+        }
+
+        // Pour du texte simple
+        if (text.length <= maxLength) {
+            return text;
+        }
+        return `<div class="truncated-text">
+            <div>${text.substring(0, maxLength)}...</div>
+            <button class="btn btn-link btn-sm see-more-btn" data-full-text="${encodeURIComponent(text)}" data-field="${field}">
+                See more
+            </button>
+        </div>`;
+    }
+
+    // Add event delegation for see more buttons
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('see-more-btn')) {
+            const fullText = decodeURIComponent(e.target.dataset.fullText);
+            const field = e.target.dataset.field;
+            createModal(field, `<div class="full-text">${fullText}</div>`);
+        }
+    });
+
+    // Function to format date in US format
+    function formatDate(dateString) {
+        if (!dateString) return 'Not specified';
+        const date = new Date(dateString);
+        return date.toLocaleString('en-US', {
+            month: '2-digit',
+            day: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
     }
 
     function updateTable() {
@@ -567,37 +742,45 @@
             );
         }
         
-        // Apply sorting
-        if (currentSort.column) {
-            filteredData.sort((a, b) => {
-                let aVal = a[currentSort.column === 'associatedDate' ? 'associated_date' : 
-                           currentSort.column === 'extractionDate' ? 'extraction_date' :
-                           currentSort.column === 'page' ? 'page_number' :
-                           currentSort.column] || '';
-                let bVal = b[currentSort.column === 'associatedDate' ? 'associated_date' : 
-                           currentSort.column === 'extractionDate' ? 'extraction_date' :
-                           currentSort.column === 'page' ? 'page_number' :
-                           currentSort.column] || '';
-                
-                if (currentSort.column.includes('Date')) {
-                    aVal = aVal ? new Date(aVal) : new Date(0);
-                    bVal = bVal ? new Date(bVal) : new Date(0);
-                }
-                
-                if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
-                if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
-                return 0;
-            });
-        }
+        // Apply sorting using tableSort
+        filteredData.sort((a, b) => {
+            let aVal = a[tableSort.column === 'associatedDate' ? 'associated_date' : 
+                       tableSort.column === 'extractionDate' ? 'extraction_date' :
+                       tableSort.column === 'page' ? 'page_number' :
+                       tableSort.column] || '';
+            let bVal = b[tableSort.column === 'associatedDate' ? 'associated_date' : 
+                       tableSort.column === 'extractionDate' ? 'extraction_date' :
+                       tableSort.column === 'page' ? 'page_number' :
+                       tableSort.column] || '';
+            
+            if (tableSort.column.includes('Date')) {
+                aVal = aVal ? new Date(aVal) : new Date(0);
+                bVal = bVal ? new Date(bVal) : new Date(0);
+            }
+            
+            if (aVal < bVal) return tableSort.direction === 'asc' ? -1 : 1;
+            if (aVal > bVal) return tableSort.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+        
+        // Update sort icons to reflect current sort
+        document.querySelectorAll('th[data-sort] i').forEach(icon => {
+            const th = icon.parentElement;
+            if (th.dataset.sort === tableSort.column) {
+                icon.className = `fas fa-sort-${tableSort.direction === 'asc' ? 'up' : 'down'}`;
+            } else {
+                icon.className = 'fas fa-sort';
+            }
+        });
         
         // Update table content with document name
         tableBody.innerHTML = filteredData.map(ext => `
             <tr>
                 <td>${ext.category}</td>
                 <td>${ext.field}</td>
-                <td>${formatValue(ext.value, ext.field)}</td>
+                <td>${formatValue(ext.value, ext.field, true)}</td>
                 <td>${ext.associated_date || 'Not specified'}</td>
-                <td>${ext.extraction_date || 'Not specified'}</td>
+                <td>${formatDate(ext.extraction_date)}</td>
                 <td>${ext.page_number}</td>
                 <td>${ext.document_name || 'Not specified'}</td>
                 <td>
@@ -634,15 +817,15 @@
         }
     }
 
-    // Add event listeners for sorting
+    // Update the click handlers for sorting
     document.querySelectorAll('th[data-sort]').forEach(th => {
         th.addEventListener('click', () => {
             const column = th.dataset.sort;
-            if (currentSort.column === column) {
-                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            if (tableSort.column === column) {
+                tableSort.direction = tableSort.direction === 'asc' ? 'desc' : 'asc';
             } else {
-                currentSort.column = column;
-                currentSort.direction = 'asc';
+                tableSort.column = column;
+                tableSort.direction = 'asc';
             }
             
             // Update sort icons
@@ -650,15 +833,23 @@
                 icon.className = 'fas fa-sort';
             });
             const icon = th.querySelector('i');
-            icon.className = `fas fa-sort-${currentSort.direction === 'asc' ? 'up' : 'down'}`;
+            icon.className = `fas fa-sort-${tableSort.direction === 'asc' ? 'up' : 'down'}`;
             
             updateTable();
         });
     });
 
-    // Add event listener for search
-    document.querySelector('.search-box').addEventListener('input', () => {
+    // Add performSearch function
+    function performSearch() {
+        const searchTerm = document.querySelector('.search-box').value;
         updateTable();
+    }
+
+    // Update the search event listener
+    document.querySelector('.search-box').addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
     });
 
     async function viewAllExtractions() {
@@ -856,14 +1047,14 @@
         createModal(`History for ${fieldName}`, modalContent);
     }
 
-    // Function to get latest values for a field
+    // Update the getLatestValues function to use reportSort for report view
     function getLatestValues(category, field, limit = null) {
         const values = extractionsData
             .filter(ext => ext.category === category && ext.field === field)
             .sort((a, b) => {
                 const dateA = a.associated_date ? new Date(a.associated_date) : new Date(0);
                 const dateB = b.associated_date ? new Date(b.associated_date) : new Date(0);
-                return dateB - dateA;
+                return reportSort.direction === 'asc' ? dateA - dateB : dateB - dateA;
             });
         
         return limit ? values.slice(0, limit) : values;

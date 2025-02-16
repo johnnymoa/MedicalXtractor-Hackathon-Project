@@ -53,6 +53,38 @@
     z-index: 1050;
 }
 
+/* Style pour limiter la largeur de la colonne Document Name */
+.table th:first-child,
+.table td:first-child {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Styles pour les tables responsives avec scroll horizontal */
+.table-responsive {
+    width: 100%;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table {
+    width: 100%;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+#prescriptionsTable {
+    min-width: 1200px; /* Pour forcer le scroll sur les petits écrans */
+}
+
+#analyzedDocumentsTable,
+#unanalyzedDocumentsTable {
+    min-width: 800px; /* Pour forcer le scroll sur les petits écrans */
+}
+
 .modal {
     position: relative;
     background: white;
@@ -550,8 +582,10 @@
                 method: 'DELETE'
             });
             
+            const data = await response.json();
+            
             if (!response.ok) {
-                throw new Error('Failed to delete analysis');
+                throw new Error(data.error || 'Failed to delete analysis');
             }
 
             // Clear the prescriptions table if we're currently viewing this document's prescriptions
@@ -561,7 +595,7 @@
             }
 
             // Reload the documents to update the tables
-            loadDocuments();
+            await loadDocuments();
             
         } catch (error) {
             console.error('Error deleting analysis:', error);

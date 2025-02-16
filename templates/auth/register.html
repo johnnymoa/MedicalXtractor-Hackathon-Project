@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}TEAM10X - Register{% endblock %}
+{% block title %}MedicalXtractor - Register{% endblock %}
 
 {% block nav_title %}Register{% endblock %}
 
@@ -18,39 +18,37 @@
             {% endif %}
         {% endwith %}
         <form method="POST" action="{{ url_for('auth.register') }}">
-            <div class="form-group">
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required>
+            <div class="form-row">
+                <div class="form-col">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirm_password">Confirm Password</label>
+                        <input type="password" id="confirm_password" name="confirm_password" required>
+                    </div>
+                </div>
+                <div class="form-col">
+                    <div class="form-group">
+                        <label for="nom">Last Name</label>
+                        <input type="text" id="nom" name="nom" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="prenom">First Name</label>
+                        <input type="text" id="prenom" name="prenom" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="organisation">Organization</label>
+                        <input type="text" id="organisation" name="organisation">
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required>
-            </div>
-            <div class="form-group">
-                <label for="confirm_password">Confirm Password</label>
-                <input type="password" id="confirm_password" name="confirm_password" required>
-            </div>
-            <div class="form-group">
-                <label for="role">Role</label>
-                <select id="role" name="role" required>
-                    <option value="">Select a role</option>
-                    {% for role_key, role_value in roles.items() %}
-                        <option value="{{ role_value }}">{{ role_key.replace('_', ' ').title() }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="nom">Last Name</label>
-                <input type="text" id="nom" name="nom" required>
-            </div>
-            <div class="form-group">
-                <label for="prenom">First Name</label>
-                <input type="text" id="prenom" name="prenom" required>
-            </div>
-            <div class="form-group">
-                <label for="organisation">Organization</label>
-                <input type="text" id="organisation" name="organisation">
-            </div>
+            <input type="hidden" name="role" value="patient">
             <div class="form-group">
                 <button type="submit" class="btn-primary">Register</button>
             </div>
@@ -76,7 +74,7 @@
     box-shadow: 0 2px 4px var(--shadow-color);
     padding: 2rem;
     width: 100%;
-    max-width: 400px;
+    max-width: 800px;
 }
 
 .auth-card h2 {
@@ -85,9 +83,18 @@
     color: var(--heading-color);
 }
 
+.form-row {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 1rem;
+}
+
+.form-col {
+    flex: 1;
+}
+
 .form-group {
     margin-bottom: 1.5rem;
-    margin-right: 1rem;
 }
 
 .form-group label {
@@ -98,18 +105,13 @@
 
 .form-group input[type="email"],
 .form-group input[type="password"],
-.form-group input[type="text"],
-.form-group select {
+.form-group input[type="text"] {
     width: 100%;
     padding: 0.75rem;
     border: 1px solid var(--input-border);
     border-radius: 4px;
     background-color: var(--input-bg);
     color: var(--text-color);
-}
-
-.form-group select {
-    cursor: pointer;
 }
 
 .btn-primary {
@@ -165,6 +167,17 @@
     background-color: #eff6ff;
     border: 1px solid #dbeafe;
     color: #2563eb;
+}
+
+@media (max-width: 768px) {
+    .auth-card {
+        max-width: 400px;
+    }
+    
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
 }
 </style>
 {% endblock %} 
