@@ -1,4 +1,4 @@
-# Medical Document Management System
+# MedicalXtractor
 
 A web-based application for managing medical documents, prescriptions, and patient information. Built with Python Flask and modern web technologies.
 
