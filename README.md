@@ -1,6 +1,26 @@
-# MedicalXtractor
+# 🏥 MedicalXtractor (MedXTract) by Team 10x
 
 A web-based application for managing medical documents, prescriptions, and patient information. Built with Python Flask and modern web technologies.
+
+*"Because decoding a medical history shouldn't take longer than a consultation!"* ⚕️🤖
+
+## 📢 Project Manifesto
+**Problem**: Doctors (especially young new ones) are drowning in 100+ page medical records (*eagerly awaiting the unified record, AMELI I see you!*).
+**Solution**: An AI extractor that transforms Uncle Robert's PDF scans into:
+- 🕒 **Prescription Timeline** (active vs expired)
+- 🎯 **Structured Medical Summary** (pathologies, allergies, treatments)
+- 🔍 **Smart Detection** of critical info.
+
+*"It's like CTRL+F, but Matrix version for busy doctors."* 💊💻
+
+---
+
+## 🚦 Current Status
+- [x] MVP coded relentlessly, even after being kicked out on the street at midnight 🥶
+- [ ] Deployment at Doctolib (*if they call us back*)
+- [ ] "GDPR-compatible" certification (*we added a .env, does that count?*)
+
+---
 
 ## Features
 
@@ -52,12 +72,12 @@ A web-based application for managing medical documents, prescriptions, and patie
    - Key information extraction
    - Summary generation
 
-### Technical Stack
+### Technical Stack 🛠️
 
 1. **Backend**
-   - Flask (Python web framework)
+   - Flask (Python web framework) (*the boomer combo* 😎)
    - PostgreSQL (Database)
-   - Mistral AI (Document processing)
+   - Mistral AI (Document processing) (*thanks to the "pixtral-large" model for OCR 2.0*)
 
 2. **Frontend**
    - Jinja2 (Template engine)
@@ -570,3 +590,5 @@ MAIL_DEFAULT_SENDER=
 - Encrypted storage
 - Secure communication
 - Access control
+
+**Coded with ❤️, 140 dragibus and 20 mini croissants 12 vegan pizza slices by Team10x** 🥤🌭
