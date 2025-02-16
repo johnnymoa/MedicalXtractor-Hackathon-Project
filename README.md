@@ -135,8 +135,8 @@ A web-based application for managing medical documents, prescriptions, and patie
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/medical-doc-system.git
-cd medical-doc-system
+git clone https://github.com/johnnymoa/team200
+cd team200
 ```
 
 2. Create and activate a virtual environment:
@@ -308,17 +308,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Support
 
 - GitHub Issues: For bug reports and feature requests
-- Email Support: support@medicaldocsystem.com
-- Documentation: See `/docs` directory
 
 ## Acknowledgments
 
 - Flask framework
-- MongoDB
 - Contributors and maintainers
-
-
-For detailed release plans, see ROADMAP.md
 
 ## Environment Variables
 
@@ -326,7 +320,7 @@ The application requires the following environment variables:
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `MISTRAL_API_KEY` | API key for Mistral AI services | `k5uHURRZYnBjm...` |
+| `MISTRAL_API_KEY` | API key for Mistral AI services | `xxxxxx...` |
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:port/db` |
 | `SECRET_KEY` | Flask secret key for session security | `your-secret-key` |
 | `MAIL_SERVER` | SMTP server for email sending | `smtp.gmail.com` |
