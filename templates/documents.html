@@ -360,6 +360,13 @@
                 return;
             }
 
+            // Set the current document ID from the response
+            currentDocumentId = data.document_id;
+            if (!currentDocumentId) {
+                showToast('Document ID not received from server', 'error');
+                return;
+            }
+
             let html = `<h2>Extracted Content (${data.total_pages} pages)</h2>`;
             data.results.forEach(result => {
                 html += `
@@ -391,6 +398,9 @@
             });
             results.innerHTML = html;
             
+            // Show success message
+            showToast('Document uploaded and processed successfully', 'success');
+            
             // Reload the documents list after successful upload
             loadDocuments();
         })
@@ -398,6 +408,7 @@
             clearTimeout(timeout);
             loader.style.display = 'none';
             results.style.display = 'block';
+            currentDocumentId = null; // Reset on error
             if (error.name === 'AbortError') {
                 results.innerHTML = `<p style="color: red">Error: Upload timed out after 5 minutes. Please try again with a smaller file or check your connection.</p>`;
             } else {

@@ -189,7 +189,8 @@
             </div>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
+            <!-- Add style for horizontal scrolling -->
+            <div class="table-responsive" style="overflow-x: auto; white-space: nowrap;">
                 <table class="table" id="analyzedDocumentsTable">
                     <thead>
                         <tr>
@@ -197,7 +198,7 @@
                             <th>Upload Date</th>
                             <th>Pages</th>
                             <th>Extractions</th>
-                            <th></th>
+                            <th style="min-width: 300px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="analyzedDocumentsTableBody">
@@ -450,6 +451,14 @@
         loader.style.display = 'block';
         
         try {
+
+            // Close the modal
+            closeModal();
+            // Scroll to the bottom of the page
+            window.scrollTo({
+                top: document.documentElement.scrollHeight,
+                behavior: 'smooth'
+            });
             const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
             const url = `/api/analyze-summary/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
             
@@ -465,6 +474,7 @@
             // Update tables and view extractions
             loadDocuments();
             await viewExtractions(docId);
+
             
         } catch (error) {
             console.error('Error generating summary:', error);
