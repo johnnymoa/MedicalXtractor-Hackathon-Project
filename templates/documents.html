@@ -4,374 +4,6 @@
 
 {% block head %}
 {{ super() }}
-<script>
-    let dropZone;
-    let fileInput;
-    let loader;
-    let results;
-
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('DOM Content Loaded - Starting initialization');
-        // Initialize variables after DOM is loaded
-        dropZone = document.getElementById('dropZone');
-        fileInput = document.getElementById('fileInput');
-        loader = document.getElementById('loader');
-        results = document.getElementById('results');
-
-        // Set up event listeners
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-        });
-
-        ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, highlight, false);
-        });
-
-        ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, unhighlight, false);
-        });
-
-        dropZone.addEventListener('drop', handleDrop, false);
-        dropZone.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', handleFileSelect);
-
-        // Load documents initially
-        loadDocuments();
-    });
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    function highlight(e) {
-        dropZone.classList.add('dragover');
-    }
-
-    function unhighlight(e) {
-        dropZone.classList.remove('dragover');
-    }
-
-    function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const file = dt.files[0];
-        handleFile(file);
-    }
-
-    function handleFileSelect(e) {
-        const file = e.target.files[0];
-        handleFile(file);
-    }
-
-    function loadDocuments() {
-        console.log('loadDocuments function called');
-        // Get patient_id from localStorage if we're a doctor
-        let patientId = null;
-        {% if current_user.role == 'medecin' %}
-        patientId = localStorage.getItem('selectedPatientId');
-        console.log('Doctor role detected, patient ID:', patientId);
-        {% endif %}
-        
-        // Construct the URL with patient_id if needed
-        const apiUrl = '/api/documents' + (patientId ? `?patient_id=${patientId}` : '');
-        console.log('Fetching documents from:', apiUrl);
-        
-        fetch(apiUrl)
-            .then(response => {
-                console.log('Response status:', response.status);
-                return response.json();
-            })
-            .then(documents => {
-                console.log('Received documents:', documents);
-                const documentsTableBody = document.getElementById('documentsTableBody');
-                if (!documentsTableBody) {
-                    console.error('documentsTableBody not found');
-                    return;
-                }
-                if (documents.length === 0) {
-                    documentsTableBody.innerHTML = '<tr><td colspan="4">No documents uploaded yet.</td></tr>';
-                    return;
-                }
-
-                let html = '';
-                documents.forEach(doc => {
-                    const uploadDate = new Date(doc.upload_date).toLocaleString();
-                    html += `
-                        <tr id="doc-${doc.id}">
-                            <td>${doc.filename}</td>
-                            <td>${uploadDate}</td>
-                            <td>${doc.total_pages}</td>
-                            <td>
-                                <button class="btn btn-primary" onclick="viewDocument(${doc.id})">View</button>
-                                <button class="btn btn-danger" onclick="deleteDocument(${doc.id})">Delete</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                documentsTableBody.innerHTML = html;
-            })
-            .catch(error => {
-                console.error('Error loading documents:', error);
-                const documentsTableBody = document.getElementById('documentsTableBody');
-                if (documentsTableBody) {
-                    documentsTableBody.innerHTML = '<tr><td colspan="4" style="color: red">Error loading documents.</td></tr>';
-                }
-            });
-    }
-
-    function viewDocument(docId) {
-        const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
-        const url = `/api/documents/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
-        
-        loader.style.display = 'block';
-        results.style.display = 'none';
-
-        fetch(url)
-            .then(response => response.json())
-            .then(data => {
-                let html = `<h2>Document: ${data.filename}</h2>`;
-                
-                // Sort pages by page number
-                const sortedPages = data.pages.sort((a, b) => a.page_number - b.page_number);
-                
-                sortedPages.forEach(page => {
-                    html += `
-                        <div class="page">
-                            <div class="page-header">
-                                Page ${page.page_number}
-                                <div class="page-actions">
-                                    <button class="btn btn-primary btn-sm" onclick="toggleEdit(${page.page_number})">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                    <button class="btn btn-success btn-sm" onclick="savePage(${page.page_number})" style="display: none;">
-                                        <i class="fas fa-save"></i> Save
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="page-container">
-                                ${page.image_data ? 
-                                    `<div>
-                                        <img src="data:image/png;base64,${page.image_data}" 
-                                            alt="Page ${page.page_number}" 
-                                            class="page-image">
-                                    </div>` : 
-                                    '<div><p>No image available for this page</p></div>'
-                                }
-                                <div class="page-content" id="page-content-${page.page_number}" contenteditable="false">${page.content}</div>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                loader.style.display = 'none';
-                results.style.display = 'block';
-                results.innerHTML = html;
-            })
-            .catch(error => {
-                loader.style.display = 'none';
-                results.style.display = 'block';
-                results.innerHTML = `<p style="color: red">Error loading document: ${error.message}</p>`;
-            });
-    }
-
-    function deleteDocument(docId) {
-        if (!confirm('Are you sure you want to delete this document and all associated analyses?')) {
-            return;
-        }
-
-        const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
-        const url = `/api/documents/${docId}/delete-with-analyses` + (patientId ? `?patient_id=${patientId}` : '');
-        console.log('Attempting to delete document and analyses:', docId, 'with URL:', url);
-
-        fetch(url, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-            .then(response => {
-                console.log('Delete response status:', response.status);
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        throw new Error(`Server error (${response.status}): ${text}`);
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Delete successful:', data);
-                document.getElementById(`doc-${docId}`).remove();
-                if (document.querySelectorAll('#documentsTableBody tr').length === 0) {
-                    document.getElementById('documentsTableBody').innerHTML = '<tr><td colspan="4">No documents uploaded yet.</td></tr>';
-                }
-            })
-            .catch(error => {
-                console.error('Error deleting document:', error);
-                alert(`Error deleting document: ${error.message}`);
-            });
-    }
-
-    function handleFile(file) {
-        if (!file.type.includes('pdf')) {
-            alert('Please upload a PDF file');
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('file', file);
-        
-        // Add patient_id to formData if we're a doctor
-        {% if current_user.role == 'medecin' %}
-        const patientId = localStorage.getItem('selectedPatientId');
-        if (patientId) {
-            formData.append('patient_id', patientId);
-        }
-        {% endif %}
-
-        loader.style.display = 'block';
-        results.style.display = 'none';
-        
-        // Add timeout of 5 minutes (300000ms)
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 300000);
-
-        fetch('/api/process-pdf', {
-            method: 'POST',
-            body: formData,
-            signal: controller.signal
-        })
-        .then(response => {
-            if (!response.ok) {
-                loader.style.display = 'none';
-                results.style.display = 'block';
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            clearTimeout(timeout);
-            loader.style.display = 'none';
-            results.style.display = 'block';
-            
-            if (data.error) {
-                results.innerHTML = `<p style="color: red">Error: ${data.error}</p>`;
-                return;
-            }
-
-            let html = `<h2>Extracted Content (${data.total_pages} pages)</h2>`;
-            data.results.forEach(result => {
-                html += `
-                    <div class="page">
-                        <div class="page-header">
-                            Page ${result.page_number}
-                            <div class="page-actions">
-                                <button class="btn btn-primary btn-sm" onclick="toggleEdit(${result.page_number})">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button class="btn btn-success btn-sm" onclick="savePage(${result.page_number})" style="display: none;">
-                                    <i class="fas fa-save"></i> Save
-                                </button>
-                            </div>
-                        </div>
-                        <div class="page-container">
-                            ${result.image_data ? 
-                                `<div>
-                                    <img src="data:image/png;base64,${result.image_data}" 
-                                        alt="Page ${result.page_number}" 
-                                        class="page-image">
-                                </div>` : 
-                                '<div><p>No image available for this page</p></div>'
-                            }
-                            <div class="page-content" id="page-content-${result.page_number}" contenteditable="false">${result.content}</div>
-                        </div>
-                    </div>
-                `;
-            });
-            results.innerHTML = html;
-            
-            // Reload the documents list after successful upload
-            loadDocuments();
-        })
-        .catch(error => {
-            clearTimeout(timeout);
-            loader.style.display = 'none';
-            results.style.display = 'block';
-            if (error.name === 'AbortError') {
-                results.innerHTML = `<p style="color: red">Error: Upload timed out after 5 minutes. Please try again with a smaller file or check your connection.</p>`;
-            } else {
-                results.innerHTML = `<p style="color: red">Error: ${error.message}</p>`;
-            }
-        });
-    }
-
-    function showUploadZone() {
-        const dropZone = document.getElementById('dropZone');
-        dropZone.style.display = dropZone.style.display === 'none' ? 'block' : 'none';
-        if (dropZone.style.display === 'block') {
-            dropZone.scrollIntoView({ behavior: 'smooth' });
-        }
-    }
-
-    function toggleEdit(pageNumber) {
-        const contentDiv = document.getElementById(`page-content-${pageNumber}`);
-        if (!contentDiv) {
-            console.error(`Content div not found for page ${pageNumber}`);
-            return;
-        }
-        
-        const pageDiv = contentDiv.closest('.page');
-        if (!pageDiv) {
-            console.error(`Page div not found for page ${pageNumber}`);
-            return;
-        }
-        
-        const editBtn = pageDiv.querySelector('.btn-primary');
-        const saveBtn = pageDiv.querySelector('.btn-success');
-        
-        if (contentDiv.contentEditable === 'false') {
-            contentDiv.contentEditable = 'true';
-            contentDiv.focus();
-            editBtn.style.display = 'none';
-            saveBtn.style.display = 'inline-block';
-        } else {
-            contentDiv.contentEditable = 'false';
-            editBtn.style.display = 'inline-block';
-            saveBtn.style.display = 'none';
-        }
-    }
-
-    async function savePage(pageNumber) {
-        const contentDiv = document.getElementById(`page-content-${pageNumber}`);
-        const newContent = contentDiv.innerText;
-        const documentId = new URLSearchParams(window.location.search).get('id');
-        
-        try {
-            const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
-            const url = `/api/documents/${documentId}/pages/${pageNumber}` + (patientId ? `?patient_id=${patientId}` : '');
-            
-            const response = await fetch(url, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    content: newContent
-                })
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to update page content');
-            }
-
-            // Update successful
-            toggleEdit(pageNumber);
-            alert('Page content updated successfully');
-        } catch (error) {
-            console.error('Error updating page content:', error);
-            alert('Error updating page content: ' + error.message);
-        }
-    }
-</script>
 {% endblock %}
 
 {% block nav_title %}Medical Documents{% endblock %}
@@ -389,21 +21,6 @@
     <i class="fas fa-book-medical"></i>
     Summarizer
 </a>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const links = ['documents-nav-link', 'prescriptions-nav-link', 'summarizer-nav-link'];
-        const patientId = localStorage.getItem('selectedPatientId');
-        if (patientId) {
-            links.forEach(linkId => {
-                const link = document.getElementById(linkId);
-                const url = new URL(link.href);
-                url.searchParams.set('patient_id', patientId);
-                link.href = url.toString();
-            });
-        }
-    });
-</script>
 {% endblock %}
 
 {% block content %}
@@ -527,4 +144,492 @@
     min-height: 100px;
 }
 </style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Declare variables at the top
+    let dropZone, fileInput, loader, results;
+    let currentDocumentId = null;
+    let toastContainer;
+
+    // Initialize app when DOM is loaded
+    document.addEventListener('DOMContentLoaded', initializeApp);
+
+    function initializeApp() {
+        console.log('Initializing application...');
+        
+        // Initialize DOM elements
+        dropZone = document.getElementById('dropZone');
+        fileInput = document.getElementById('fileInput');
+        loader = document.getElementById('loader');
+        results = document.getElementById('results');
+
+        if (!dropZone || !fileInput || !loader || !results) {
+            console.error('Required elements not found');
+            return;
+        }
+
+        // Set up event listeners
+        initializeEventListeners();
+        initializeNavLinks();
+        loadDocuments();
+        
+        // Initialize toast container
+        toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container';
+        document.body.appendChild(toastContainer);
+    }
+
+    function getPatientId() {
+        {% if current_user.role == 'medecin' %}
+            return localStorage.getItem('selectedPatientId');
+        {% else %}
+            return null;
+        {% endif %}
+    }
+
+    function initializeEventListeners() {
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        dropZone.addEventListener('drop', handleDrop, false);
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', handleFileSelect);
+    }
+
+    function initializeNavLinks() {
+        const links = ['documents-nav-link', 'prescriptions-nav-link', 'summarizer-nav-link'];
+        const patientId = getPatientId();
+        
+        if (patientId) {
+            links.forEach(linkId => {
+                const link = document.getElementById(linkId);
+                if (link) {
+                    const url = new URL(link.href);
+                    url.searchParams.set('patient_id', patientId);
+                    link.href = url.toString();
+                }
+            });
+        }
+    }
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    function highlight(e) {
+        dropZone.classList.add('dragover');
+    }
+
+    function unhighlight(e) {
+        dropZone.classList.remove('dragover');
+    }
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const file = dt.files[0];
+        handleFile(file);
+    }
+
+    function handleFileSelect(e) {
+        const file = e.target.files[0];
+        handleFile(file);
+    }
+
+    function loadDocuments() {
+        const patientId = getPatientId();
+        const apiUrl = '/api/documents' + (patientId ? `?patient_id=${patientId}` : '');
+        
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(documents => {
+                updateDocumentsTable(documents);
+            })
+            .catch(error => {
+                console.error('Error loading documents:', error);
+                showError('Error loading documents.');
+            });
+    }
+
+    function viewDocument(docId) {
+        currentDocumentId = docId;
+        const patientId = getPatientId();
+        const url = `/api/documents/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
+        
+        showLoader();
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                displayDocument(data);
+            })
+            .catch(error => {
+                console.error('Error viewing document:', error);
+                showError(`Error loading document: ${error.message}`);
+            });
+    }
+
+    function deleteDocument(docId) {
+        confirmAction('Are you sure you want to delete this document and all associated analyses?')
+            .then(confirmed => {
+                if (confirmed) {
+                    const patientId = getPatientId();
+                    const url = `/api/documents/${docId}/delete-with-analyses` + (patientId ? `?patient_id=${patientId}` : '');
+                    
+                    fetch(url, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                return response.text().then(text => {
+                                    throw new Error(`Server error (${response.status}): ${text}`);
+                                });
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            document.getElementById(`doc-${docId}`).remove();
+                            if (document.querySelectorAll('#documentsTableBody tr').length === 0) {
+                                document.getElementById('documentsTableBody').innerHTML = 
+                                    '<tr><td colspan="4">No documents uploaded yet.</td></tr>';
+                            }
+                            showToast('Document deleted successfully', 'success');
+                        })
+                        .catch(error => {
+                            console.error('Error deleting document:', error);
+                            showToast(`Error deleting document: ${error.message}`, 'error');
+                        });
+                }
+            });
+    }
+
+    function handleFile(file) {
+        if (!file.type.includes('pdf')) {
+            showToast('Please upload a PDF file', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const patientId = getPatientId();
+        if (patientId) {
+            formData.append('patient_id', patientId);
+        }
+
+        loader.style.display = 'block';
+        results.style.display = 'none';
+        
+        // Add timeout of 5 minutes (300000ms)
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 300000);
+
+        fetch('/api/process-pdf', {
+            method: 'POST',
+            body: formData,
+            signal: controller.signal
+        })
+        .then(response => {
+            if (!response.ok) {
+                loader.style.display = 'none';
+                results.style.display = 'block';
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            clearTimeout(timeout);
+            loader.style.display = 'none';
+            results.style.display = 'block';
+            
+            if (data.error) {
+                results.innerHTML = `<p style="color: red">Error: ${data.error}</p>`;
+                return;
+            }
+
+            let html = `<h2>Extracted Content (${data.total_pages} pages)</h2>`;
+            data.results.forEach(result => {
+                html += `
+                    <div class="page">
+                        <div class="page-header">
+                            Page ${result.page_number}
+                            <div class="page-actions">
+                                <button class="btn btn-primary btn-sm" onclick="toggleEdit(${result.page_number})">
+                                    <i class="fas fa-edit"></i> Edit
+                                </button>
+                                <button class="btn btn-success btn-sm" onclick="savePage(${result.page_number})" style="display: none;">
+                                    <i class="fas fa-save"></i> Save
+                                </button>
+                            </div>
+                        </div>
+                        <div class="page-container">
+                            ${result.image_data ? 
+                                `<div>
+                                    <img src="data:image/png;base64,${result.image_data}" 
+                                        alt="Page ${result.page_number}" 
+                                        class="page-image">
+                                </div>` : 
+                                '<div><p>No image available for this page</p></div>'
+                            }
+                            <div class="page-content" id="page-content-${result.page_number}" contenteditable="false">${result.content}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            results.innerHTML = html;
+            
+            // Reload the documents list after successful upload
+            loadDocuments();
+        })
+        .catch(error => {
+            clearTimeout(timeout);
+            loader.style.display = 'none';
+            results.style.display = 'block';
+            if (error.name === 'AbortError') {
+                results.innerHTML = `<p style="color: red">Error: Upload timed out after 5 minutes. Please try again with a smaller file or check your connection.</p>`;
+            } else {
+                results.innerHTML = `<p style="color: red">Error: ${error.message}</p>`;
+            }
+        });
+    }
+
+    function showUploadZone() {
+        const dropZone = document.getElementById('dropZone');
+        dropZone.style.display = dropZone.style.display === 'none' ? 'block' : 'none';
+        if (dropZone.style.display === 'block') {
+            dropZone.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+
+    function toggleEdit(pageNumber) {
+        const contentDiv = document.getElementById(`page-content-${pageNumber}`);
+        if (!contentDiv) {
+            console.error(`Content div not found for page ${pageNumber}`);
+            return;
+        }
+        
+        const pageDiv = contentDiv.closest('.page');
+        if (!pageDiv) {
+            console.error(`Page div not found for page ${pageNumber}`);
+            return;
+        }
+        
+        const editBtn = pageDiv.querySelector('.btn-primary');
+        const saveBtn = pageDiv.querySelector('.btn-success');
+        
+        if (contentDiv.contentEditable === 'false') {
+            contentDiv.contentEditable = 'true';
+            contentDiv.focus();
+            editBtn.style.display = 'none';
+            saveBtn.style.display = 'inline-block';
+        } else {
+            contentDiv.contentEditable = 'false';
+            editBtn.style.display = 'inline-block';
+            saveBtn.style.display = 'none';
+        }
+    }
+
+    async function savePage(pageNumber) {
+        const contentDiv = document.getElementById(`page-content-${pageNumber}`);
+        const newContent = contentDiv.innerText;
+        
+        if (!currentDocumentId) {
+            showToast('No document is currently being viewed', 'error');
+            return;
+        }
+
+        try {
+            const patientId = getPatientId();
+            
+            const url = `/api/documents/${currentDocumentId}/pages/${pageNumber}` + 
+                       (patientId ? `?patient_id=${patientId}` : '');
+            
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ content: newContent })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update page content');
+            }
+
+            toggleEdit(pageNumber);
+            showToast('Page content updated successfully', 'success');
+        } catch (error) {
+            console.error('Error updating page content:', error);
+            showToast(`Error updating page content: ${error.message}`, 'error');
+        }
+    }
+
+    function updateDocumentsTable(documents) {
+        const documentsTableBody = document.getElementById('documentsTableBody');
+        
+        if (!documentsTableBody) {
+            console.error('documentsTableBody not found');
+            return;
+        }
+
+        if (documents.length === 0) {
+            documentsTableBody.innerHTML = '<tr><td colspan="4">No documents uploaded yet.</td></tr>';
+            return;
+        }
+
+        let html = '';
+        documents.forEach(doc => {
+            const uploadDate = new Date(doc.upload_date).toLocaleString();
+            html += `
+                <tr id="doc-${doc.id}">
+                    <td>${doc.filename}</td>
+                    <td>${uploadDate}</td>
+                    <td>${doc.total_pages}</td>
+                    <td>
+                        <button class="btn btn-primary" onclick="viewDocument(${doc.id})">View</button>
+                        <button class="btn btn-danger" onclick="deleteDocument(${doc.id})">Delete</button>
+                    </td>
+                </tr>
+            `;
+        });
+        documentsTableBody.innerHTML = html;
+    }
+
+    function showError(message) {
+        const documentsTableBody = document.getElementById('documentsTableBody');
+        if (documentsTableBody) {
+            documentsTableBody.innerHTML = `<tr><td colspan="4" style="color: red">${message}</td></tr>`;
+        }
+        
+        if (results) {
+            results.style.display = 'block';
+            results.innerHTML = `<p style="color: red">${message}</p>`;
+        }
+        
+        if (loader) {
+            loader.style.display = 'none';
+        }
+    }
+
+    function showLoader() {
+        if (loader) {
+            loader.style.display = 'block';
+        }
+        if (results) {
+            results.style.display = 'none';
+        }
+    }
+
+    function displayDocument(data) {
+        let html = `<h2>Document: ${data.filename}</h2>`;
+        
+        // Sort pages by page number
+        const sortedPages = data.pages.sort((a, b) => a.page_number - b.page_number);
+        
+        sortedPages.forEach(page => {
+            html += `
+                <div class="page">
+                    <div class="page-header">
+                        Page ${page.page_number}
+                        <div class="page-actions">
+                            <button class="btn btn-primary btn-sm" onclick="toggleEdit(${page.page_number})">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-success btn-sm" onclick="savePage(${page.page_number})" style="display: none;">
+                                <i class="fas fa-save"></i> Save
+                            </button>
+                        </div>
+                    </div>
+                    <div class="page-container">
+                        ${page.image_data ? 
+                            `<div>
+                                <img src="data:image/png;base64,${page.image_data}" 
+                                    alt="Page ${page.page_number}" 
+                                    class="page-image">
+                            </div>` : 
+                            '<div><p>No image available for this page</p></div>'
+                        }
+                        <div class="page-content" id="page-content-${page.page_number}" contenteditable="false">${page.content}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        if (loader) loader.style.display = 'none';
+        if (results) {
+            results.style.display = 'block';
+            results.innerHTML = html;
+        }
+    }
+
+    function showToast(message, type = 'success', duration = 3000) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">${message}</div>
+            <button class="toast-close">&times;</button>
+        `;
+
+        const closeBtn = toast.querySelector('.toast-close');
+        closeBtn.addEventListener('click', () => removeToast(toast));
+
+        toastContainer.appendChild(toast);
+
+        // Auto remove after duration
+        setTimeout(() => removeToast(toast), duration);
+    }
+
+    function removeToast(toast) {
+        toast.style.animation = 'slideOut 0.3s ease-out forwards';
+        setTimeout(() => {
+            if (toast.parentElement === toastContainer) {
+                toastContainer.removeChild(toast);
+            }
+        }, 300);
+    }
+
+    async function confirmAction(message) {
+        return new Promise((resolve) => {
+            const toast = document.createElement('div');
+            toast.className = 'toast warning';
+            toast.innerHTML = `
+                <div class="toast-content">
+                    ${message}
+                    <div style="margin-top: 10px;">
+                        <button class="btn btn-sm btn-danger mr-2">Confirm</button>
+                        <button class="btn btn-sm btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            `;
+
+            const confirmBtn = toast.querySelector('.btn-danger');
+            const cancelBtn = toast.querySelector('.btn-secondary');
+
+            confirmBtn.addEventListener('click', () => {
+                removeToast(toast);
+                resolve(true);
+            });
+
+            cancelBtn.addEventListener('click', () => {
+                removeToast(toast);
+                resolve(false);
+            });
+
+            toastContainer.appendChild(toast);
+        });
+    }
+</script>
 {% endblock %}
