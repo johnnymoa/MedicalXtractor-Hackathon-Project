@@ -10,7 +10,7 @@ auth_bp = Blueprint('auth', __name__)
 def init_auth_routes(app):
     print("\n=== Initializing auth routes ===")
     print("Registering auth_bp Blueprint")
-    app.register_blueprint(auth_bp)
+    app.register_blueprint(auth_bp, url_prefix='/auth')
     print("Auth routes initialized successfully")
 
 @auth_bp.route('/login', methods=['GET', 'POST'])

@@ -5,15 +5,15 @@
 {% block nav_title %}Medical Documents{% endblock %}
 
 {% block page_navigation %}
-<a href="{{ url_for('documents') }}{% if current_user.role == 'medecin' %}?patient_id={{ request.args.get('patient_id') }}{% endif %}" class="active" id="documents-nav-link">
+<a href="{{ url_for('documents') }}" class="active" id="documents-nav-link">
     <i class="fas fa-file-medical"></i>
     Documents
 </a>
-<a href="{{ url_for('prescriptions') }}{% if current_user.role == 'medecin' %}?patient_id={{ request.args.get('patient_id') }}{% endif %}" id="prescriptions-nav-link">
+<a href="{{ url_for('prescriptions') }}" id="prescriptions-nav-link">
     <i class="fas fa-prescription"></i>
     Prescriptions
 </a>
-<a href="{{ url_for('summarizer') }}{% if current_user.role == 'medecin' %}?patient_id={{ request.args.get('patient_id') }}{% endif %}" id="summarizer-nav-link">
+<a href="{{ url_for('summarizer') }}" id="summarizer-nav-link">
     <i class="fas fa-book-medical"></i>
     Summarizer
 </a>
@@ -26,7 +26,6 @@
             links.forEach(linkId => {
                 const link = document.getElementById(linkId);
                 const url = new URL(link.href);
-                url.searchParams.delete('patient_id');
                 url.searchParams.set('patient_id', patientId);
                 link.href = url.toString();
             });
@@ -105,6 +104,33 @@
 .drop-zone.dragover {
     border-color: var(--primary-color);
     background-color: rgba(var(--primary-color-rgb), 0.1);
+}
+
+/* Style pour limiter la largeur de la colonne Document Name */
+.table th:first-child,
+.table td:first-child {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Styles pour les tables responsives avec scroll horizontal */
+.table-responsive {
+    width: 100%;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table {
+    width: 100%;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+#documentsTable {
+    min-width: 800px; /* Pour forcer le scroll sur les petits écrans */
 }
 </style>
 
