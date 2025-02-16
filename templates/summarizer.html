@@ -226,21 +226,23 @@
                 </div>
                 <hr class="my-3">
                 <div class="d-flex justify-content-between align-items-center">
-                    <div class="col-6">
-                        <div class="d-flex align-items-center">
-                            <button type="button" class="btn btn-primary active" 
-                                    id="toggleTableViewBtn" style="margin-right: 8px;">Table View</button>
-                            <button type="button" class="btn btn-secondary" 
-                                    id="toggleReportViewBtn">Report View</button>
+                    <div class="row w-100">
+                        <div class="col-6">
+                            <div class="d-flex align-items-center">
+                                <button type="button" class="btn btn-primary active" 
+                                        id="toggleTableViewBtn" style="margin-right: 8px;">Table View</button>
+                                <button type="button" class="btn btn-secondary" 
+                                        id="toggleReportViewBtn">Report View</button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="input-group">
-                            <input type="text" class="form-control search-box" placeholder="Search extractions...">
-                            <div class="input-group-append">
-                                <button class="btn btn-primary" type="button" onclick="performSearch()">
-                                    <i class="fas fa-search"></i>
-                                </button>
+                        <div class="col-6">
+                            <div class="input-group d-flex" style="position: relative;">
+                                <input type="text" class="form-control search-box" placeholder="Search extractions..." style="width: 100%;     max-width: calc(100% - 94px);">
+                                <div class="input-group-append" style="float: right;     position: absolute;     right: -1px;     top: 2px;">
+                                    <button class="btn btn-primary" type="button" onclick="performSearch()">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
