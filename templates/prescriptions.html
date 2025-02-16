@@ -2,7 +2,41 @@
 
 {% block title %}MedicalXtractor - Prescription Manager{% endblock %}
 
-{% block nav_title %}Prescription Manager{% endblock %}
+{% block nav_title %}Prescriptions{% endblock %}
+
+{% block page_navigation %}
+<a href="{{ url_for('documents') }}{% if current_user.role == 'medecin' %}?patient_id={{ request.args.get('patient_id') }}{% endif %}" id="documents-nav-link">
+    <i class="fas fa-file-medical"></i>
+    Documents
+</a>
+<a href="{{ url_for('prescriptions') }}{% if current_user.role == 'medecin' %}?patient_id={{ request.args.get('patient_id') }}{% endif %}" class="active" id="prescriptions-nav-link">
+    <i class="fas fa-prescription"></i>
+    Prescriptions
+</a>
+<a href="{{ url_for('summarizer') }}{% if current_user.role == 'medecin' %}?patient_id={{ request.args.get('patient_id') }}{% endif %}" id="summarizer-nav-link">
+    <i class="fas fa-book-medical"></i>
+    Summarizer
+</a>
+
+<script>
+    // Update navigation links with patient_id from localStorage if we're a doctor
+    {% if current_user.role == 'medecin' %}
+    document.addEventListener('DOMContentLoaded', function() {
+        const links = ['documents-nav-link', 'prescriptions-nav-link', 'summarizer-nav-link'];
+        const patientId = localStorage.getItem('selectedPatientId');
+        if (patientId) {
+            links.forEach(linkId => {
+                const link = document.getElementById(linkId);
+                const url = new URL(link.href);
+                url.searchParams.delete('patient_id');
+                url.searchParams.set('patient_id', patientId);
+                link.href = url.toString();
+            });
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -17,6 +51,38 @@
     justify-content: center;
     align-items: center;
     z-index: 1050;
+}
+
+/* Style pour limiter la largeur de la colonne Document Name */
+.table th:first-child,
+.table td:first-child {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Styles pour les tables responsives avec scroll horizontal */
+.table-responsive {
+    width: 100%;
+    margin-bottom: 1rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.table {
+    width: 100%;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+#prescriptionsTable {
+    min-width: 1200px; /* Pour forcer le scroll sur les petits écrans */
+}
+
+#analyzedDocumentsTable,
+#unanalyzedDocumentsTable {
+    min-width: 800px; /* Pour forcer le scroll sur les petits écrans */
 }
 
 .modal {
@@ -253,7 +319,13 @@
     }
 
     function loadDocuments() {
-        fetch('/api/documents')
+        // Get patient_id from localStorage if we're a doctor
+        const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+        
+        // Construct the URL with patient_id if needed
+        const url = '/api/documents' + (patientId ? `?patient_id=${patientId}` : '');
+        
+        fetch(url)
             .then(response => response.json())
             .then(documents => {
                 const unanalyzedTableBody = document.getElementById('unanalyzedDocumentsTableBody');
@@ -285,7 +357,10 @@
 
     async function checkPrescriptionStatus(doc) {
         try {
-            const response = await fetch(`/api/analyze-prescription/${doc.id}`, {
+            const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+            const url = `/api/analyze-prescription/${doc.id}` + (patientId ? `?patient_id=${patientId}` : '');
+            
+            const response = await fetch(url, {
                 method: 'GET'
             });
             const data = await response.json();
@@ -344,7 +419,10 @@
         loader.style.display = 'block';
         
         try {
-            const response = await fetch(`/api/analyze-prescription/${docId}`, {
+            const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+            const url = `/api/analyze-prescription/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
+            
+            const response = await fetch(url, {
                 method: 'POST'
             });
             const data = await response.json();
@@ -376,7 +454,9 @@
         
         try {
             // Get all documents
-            const documentsResponse = await fetch('/api/documents');
+            const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+            const url = '/api/documents' + (patientId ? `?patient_id=${patientId}` : '');
+            const documentsResponse = await fetch(url);
             const documents = await documentsResponse.json();
             
             // Clear existing prescriptions
@@ -386,7 +466,10 @@
             // Fetch prescriptions for each document
             for (const doc of documents) {
                 try {
-                    const response = await fetch(`/api/analyze-prescription/${doc.id}`);
+                    const prescriptionUrl = `/api/analyze-prescription/${doc.id}` + (patientId ? `?patient_id=${patientId}` : '');
+                    const response = await fetch(prescriptionUrl, {
+                        method: 'POST'
+                    });
                     const data = await response.json();
                     
                     if (!data.error && data.medications) {
@@ -419,7 +502,10 @@
         loader.style.display = 'block';
         
         try {
-            const response = await fetch(`/api/analyze-prescription/${docId}`, {
+            const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+            const url = `/api/analyze-prescription/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
+            
+            const response = await fetch(url, {
                 method: 'POST'
             });
             const data = await response.json();
@@ -429,7 +515,8 @@
             }
 
             // Get document info for source reference
-            const docResponse = await fetch(`/api/documents/${docId}`);
+            const docUrl = `/api/documents/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
+            const docResponse = await fetch(docUrl);
             const docData = await docResponse.json();
             
             // Add document info to each medication
@@ -455,8 +542,11 @@
         loader.style.display = 'block';
         
         try {
+            const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+            const url = `/api/analyze-prescription/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
+            
             // First delete existing analysis
-            await fetch(`/api/analyze-prescription/${docId}`, {
+            await fetch(url, {
                 method: 'DELETE'
             });
             
@@ -484,13 +574,18 @@
         loader.style.display = 'block';
         
         try {
+            const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+            const url = `/api/analyze-prescription/${docId}` + (patientId ? `?patient_id=${patientId}` : '');
+            
             // Delete the analysis
-            const response = await fetch(`/api/analyze-prescription/${docId}`, {
+            const response = await fetch(url, {
                 method: 'DELETE'
             });
             
+            const data = await response.json();
+            
             if (!response.ok) {
-                throw new Error('Failed to delete analysis');
+                throw new Error(data.error || 'Failed to delete analysis');
             }
 
             // Clear the prescriptions table if we're currently viewing this document's prescriptions
@@ -500,7 +595,7 @@
             }
 
             // Reload the documents to update the tables
-            loadDocuments();
+            await loadDocuments();
             
         } catch (error) {
             console.error('Error deleting analysis:', error);
@@ -617,19 +712,9 @@
 
     async function viewPage(documentId, pageNumber) {
         try {
-            // First verify the image URL is accessible
-            const response = await fetch(`/api/documents/${documentId}/pages/${pageNumber}/image`);
-            if (!response.ok) {
-                throw new Error('Failed to load page image');
-            }
-            
-            const content = `
-                <div style="text-align: center;">
-                    <img src="/api/documents/${documentId}/pages/${pageNumber}/image" 
-                         class="img-fluid" 
-                         alt="Page ${pageNumber}"
-                         style="max-width: 100%; height: auto;">
-                </div>`;
+            const patientId = {% if current_user.role == 'medecin' %}localStorage.getItem('selectedPatientId'){% else %}null{% endif %};
+            const url = `/api/documents/${documentId}/pages/${pageNumber}/image` + (patientId ? `?patient_id=${patientId}` : '');
+            const content = `<img src="${url}" class="img-fluid" alt="Page ${pageNumber}">`;
             createModal(`Page ${pageNumber}`, content);
         } catch (error) {
             console.error('Error viewing page:', error);

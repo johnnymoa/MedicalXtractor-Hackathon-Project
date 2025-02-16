@@ -10,6 +10,7 @@ from threading import Semaphore
 from mistralai import Mistral
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import random
+from flask_login import current_user
 
 # Rate limiting configuration
 MAX_CONCURRENT_CALLS = 3  # Reduced from 5 to 3
@@ -124,7 +125,7 @@ def process_page_image_with_throttle(image, page_num, mistral_client):
                     print(error_msg)
                     return f"Error processing page {page_num}: {str(e)}"
 
-def process_pdf_document(file, db, Document, Page, mistral_client):
+def process_pdf_document(file, db, Document, Page, mistral_client, user_id):
     """Process a PDF document and store results in the database"""
     temp_file = None
     start_time = time.time()
@@ -145,10 +146,11 @@ def process_pdf_document(file, db, Document, Page, mistral_client):
             
             print(f"[Document] Successfully extracted {len(images)} pages from PDF")
             
-            # Create new document in database
+            # Create new document in database with user_id
             document = Document(
                 filename=file.filename,
-                total_pages=len(images)
+                total_pages=len(images),
+                user_id=user_id  # Use the provided user_id
             )
             db.session.add(document)
             db.session.flush()  # Get the document ID without committing

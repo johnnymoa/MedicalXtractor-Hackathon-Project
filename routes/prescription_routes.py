@@ -1,11 +1,26 @@
-from flask import jsonify
+from flask import jsonify, request
+from flask_login import login_required, current_user
+from models import Patient
 
-def init_prescription_routes(app, db, Document, PrescriptionAnalysis, Medication, PrescriptionAgent, process_prescription_analysis, mistral_client):
+def init_prescription_routes(app, db, Document, PrescriptionAnalysis, Medication, prescription_agent, process_prescription_analysis, mistral_client):
     @app.route('/api/analyze-prescription/<int:doc_id>', methods=['GET'])
+    @login_required
     def get_prescription_analysis(doc_id):
         """Get prescription analysis for a document if it exists"""
         try:
             document = Document.query.get_or_404(doc_id)
+            
+            # Verify permissions
+            if current_user.role == 'medecin':
+                patient_id = request.args.get('patient_id')
+                if not patient_id:
+                    return jsonify({'error': 'Patient ID is required'}), 400
+                patient = Patient.query.filter_by(id=patient_id, doctor_id=current_user.id).first()
+                if not patient or document.user_id != patient.user_id:
+                    return jsonify({'error': 'Access denied'}), 403
+            elif current_user.role == 'patient' and document.user_id != current_user.id:
+                return jsonify({'error': 'Access denied'}), 403
+            
             if document.prescription:
                 return jsonify({
                     'medications': [{
@@ -25,10 +40,23 @@ def init_prescription_routes(app, db, Document, PrescriptionAnalysis, Medication
             return jsonify({'error': str(e)}), 500
 
     @app.route('/api/analyze-prescription/<int:doc_id>', methods=['POST'])
+    @login_required
     def analyze_prescription(doc_id):
         """Analyze prescription document and create structured data"""
         try:
             document = Document.query.get_or_404(doc_id)
+            
+            # Verify permissions
+            if current_user.role == 'medecin':
+                patient_id = request.args.get('patient_id')
+                if not patient_id:
+                    return jsonify({'error': 'Patient ID is required'}), 400
+                patient = Patient.query.filter_by(id=patient_id, doctor_id=current_user.id).first()
+                if not patient or document.user_id != patient.user_id:
+                    return jsonify({'error': 'Access denied'}), 403
+            elif current_user.role == 'patient' and document.user_id != current_user.id:
+                return jsonify({'error': 'Access denied'}), 403
+            
             # Only create new analysis if one doesn't exist
             if document.prescription:
                 return jsonify({
@@ -45,7 +73,6 @@ def init_prescription_routes(app, db, Document, PrescriptionAnalysis, Medication
                     } for med in document.prescription.medications]
                 })
             
-            prescription_agent = PrescriptionAgent(mistral_client)
             return jsonify(process_prescription_analysis(
                 document=document,
                 prescription_agent=prescription_agent,
@@ -57,10 +84,23 @@ def init_prescription_routes(app, db, Document, PrescriptionAnalysis, Medication
             return jsonify({'error': str(e)}), 500
 
     @app.route('/api/analyze-prescription/<int:doc_id>', methods=['DELETE'])
+    @login_required
     def delete_prescription_analysis(doc_id):
         """Delete prescription analysis for a document"""
         try:
             document = Document.query.get_or_404(doc_id)
+            
+            # Verify permissions
+            if current_user.role == 'medecin':
+                patient_id = request.args.get('patient_id')
+                if not patient_id:
+                    return jsonify({'error': 'Patient ID is required'}), 400
+                patient = Patient.query.filter_by(id=patient_id, doctor_id=current_user.id).first()
+                if not patient or document.user_id != patient.user_id:
+                    return jsonify({'error': 'Access denied'}), 403
+            elif current_user.role == 'patient' and document.user_id != current_user.id:
+                return jsonify({'error': 'Access denied'}), 403
+            
             if document.prescription:
                 db.session.delete(document.prescription)
                 db.session.commit()

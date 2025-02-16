@@ -4,69 +4,76 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
+    <!-- Font Awesome CDN -->
+    <link 
+      rel="stylesheet" 
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" 
+      integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" 
+      crossorigin="anonymous" 
+      referrerpolicy="no-referrer" 
+    />
     <title>{% block title %}MedicalXtractor{% endblock %}</title>
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='styles.css') }}"
     />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/toast.css') }}">
     {% block extra_css %}{% endblock %}
   </head>
   <body>
     <nav class="navbar">
       <div class="nav-left">
-        <h1>MedicalXtractor</h1>
-        <a href="{{ url_for('index') }}" class="home-button">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="24" height="24">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-            <polyline points="9 22 9 12 15 12 15 22"></polyline>
-          </svg>
-        </a>
+        <h1>
+          <a href="{% if current_user.is_authenticated %}{{ url_for('dashboard') }}{% else %}{{ url_for('index') }}{% endif %}" style="text-decoration: none; color: inherit;">
+            MedicalXtractor
+          </a>
+        </h1>
+        {% if current_user.is_authenticated and current_user.role == 'medecin' and request.endpoint != 'dashboard' %}
+        <div class="patient-nav-selector">
+          <select id="navPatientSelect" class="nav-form-select">
+            <option value="">Choose a patient...</option>
+          </select>
+        </div>
+        {% endif %}
       </div>
       <div class="nav-right">
-        <a href="{{ url_for('documents') }}">Documents</a>
-        <a href="{{ url_for('prescriptions') }}">Prescriptions</a>
-        <a href="{{ url_for('summarizer') }}">Summaries</a>
+        {% if current_user.is_authenticated %}
+      </div>
+      <div class="nav-right">
         <button
           class="theme-toggle"
           id="theme-toggle"
           title="Toggle dark mode"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="sun-icon"
-          >
-            <circle cx="12" cy="12" r="5"></circle>
-            <line x1="12" y1="1" x2="12" y2="3"></line>
-            <line x1="12" y1="21" x2="12" y2="23"></line>
-            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-            <line x1="1" y1="12" x2="3" y2="12"></line>
-            <line x1="21" y1="12" x2="23" y2="12"></line>
-            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-          </svg>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="moon-icon"
-            style="display: none"
-          >
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-          </svg>
+          <i class="fas fa-sun" id="sun-icon"></i>
+          <i class="fas fa-moon" id="moon-icon"></i>
         </button>
+        <a href="{{ url_for('profile') }}" class="nav-link">
+          <i class="fas fa-user-cog"></i>
+          Profile Settings
+        </a>
+        <a href="{{ url_for('auth.logout') }}" class="btn-logout" title="Logout">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+        {% else %}
+        <a href="{{ url_for('auth.login') }}" class="nav-link">Login</a>
+        {% endif %}
       </div>
     </nav>
+
+    {% if current_user.is_authenticated and request.endpoint != 'dashboard' %}
+    <div class="breadcrumb-container">
+      <div class="breadcrumb">
+        <a href="{{ url_for('dashboard') }}">
+          <i class="fas fa-home"></i>
+          Dashboard
+        </a>
+      </div>
+      <div class="page-navigation">
+        {% block page_navigation %}{% endblock %}
+      </div>
+    </div>
+    {% endif %}
 
     <div class="container">{% block content %}{% endblock %}</div>
 
@@ -74,50 +81,211 @@
       <p>&copy; 2025 MedicalXtractor. All rights reserved. | <a href="{{ url_for('credits') }}">Credits</a></p>
     </footer>
 
+    <style>
+      .nav-left {
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+      }
+
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .navbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 2rem;
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .patient-nav-selector {
+        min-width: 250px;
+      }
+
+      .nav-form-select {
+        width: 100%;
+        padding: 0.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+        background-color: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-size: 0.9rem;
+      }
+
+      .nav-form-select option {
+        background-color: var(--card-bg);
+        color: var(--text-color);
+      }
+
+      .btn-logout {
+        padding: 0.5rem 1rem;
+        color: white;
+        text-decoration: none;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background-color: var(--error-color);
+        transition: background-color 0.3s ease;
+      }
+
+      .btn-logout:hover {
+        background-color: #dc2626;
+      }
+
+      .theme-toggle {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 0.5rem;
+        font-size: 1.2rem;
+      }
+
+      .breadcrumb-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 2rem;
+        background-color: var(--card-bg);
+        border-bottom: 1px solid var(--border-color);
+      }
+
+      .breadcrumb {
+        display: flex;
+        align-items: center;
+      }
+
+      .breadcrumb a {
+        color: var(--text-color);
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+      }
+
+      .breadcrumb a:hover {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .breadcrumb i {
+        font-size: 0.9rem;
+      }
+
+      .page-navigation {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .page-navigation a {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: var(--text-color);
+        text-decoration: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+      }
+
+      .page-navigation a:hover {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .page-navigation a.active {
+        background-color: var(--primary-color);
+        color: white;
+      }
+
+      .page-navigation i {
+        font-size: 0.9rem;
+      }
+    </style>
+
     <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const themeToggle = document.getElementById("theme-toggle");
-        const sunIcon = themeToggle.querySelector(".sun-icon");
-        const moonIcon = themeToggle.querySelector(".moon-icon");
+      document.addEventListener("DOMContentLoaded", function () {
         const html = document.documentElement;
+        const themeToggle = document.getElementById("theme-toggle");
+        const sunIcon = document.getElementById("sun-icon");
+        const moonIcon = document.getElementById("moon-icon");
+        const navPatientSelect = document.getElementById("navPatientSelect");
 
-        // Vérifier la préférence système
-        const prefersDark = window.matchMedia(
-          "(prefers-color-scheme: dark)"
-        ).matches;
-
-        // Charger le thème depuis le localStorage ou utiliser la préférence système
-        const savedTheme =
-          localStorage.getItem("theme") || (prefersDark ? "dark" : "light");
+        // Get saved theme from localStorage or use system preference
+        const savedTheme = localStorage.getItem("theme") || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
         applyTheme(savedTheme);
-
-        // Écouter les changements de préférence système
-        window
-          .matchMedia("(prefers-color-scheme: dark)")
-          .addEventListener("change", (e) => {
-            if (!localStorage.getItem("theme")) {
-              applyTheme(e.matches ? "dark" : "light");
-            }
-          });
 
         themeToggle.addEventListener("click", () => {
           const currentTheme = html.getAttribute("data-theme");
-          const newTheme = currentTheme === "light" ? "dark" : "light";
-          applyTheme(newTheme);
+          const newTheme = currentTheme === "dark" ? "light" : "dark";
+
           localStorage.setItem("theme", newTheme);
+          applyTheme(newTheme);
         });
 
         function applyTheme(theme) {
           html.setAttribute("data-theme", theme);
           updateIcons(theme);
 
-          // Mettre à jour la meta color-scheme
+          // Update color-scheme meta tag
           document.querySelector('meta[name="color-scheme"]').content = theme;
         }
 
         function updateIcons(theme) {
           sunIcon.style.display = theme === "dark" ? "none" : "block";
           moonIcon.style.display = theme === "dark" ? "block" : "none";
+        }
+
+        // Handle patient selector in nav if it exists
+        if (navPatientSelect) {
+          // Load patients list
+          fetch('/api/patients')
+            .then(response => response.json())
+            .then(patients => {
+              patients.forEach(patient => {
+                const option = document.createElement('option');
+                option.value = patient.id;
+                option.textContent = `${patient.prenom} ${patient.nom}`;
+                navPatientSelect.appendChild(option);
+              });
+
+              // Set the current patient from localStorage
+              const savedPatientId = localStorage.getItem('selectedPatientId');
+              if (savedPatientId) {
+                navPatientSelect.value = savedPatientId;
+              }
+            })
+            .catch(error => console.error('Error loading patients:', error));
+
+          // Handle patient selection change
+          navPatientSelect.addEventListener('change', function() {
+            const selectedPatientId = this.value;
+            
+            if (selectedPatientId) {
+              localStorage.setItem('selectedPatientId', selectedPatientId);
+              // Get current URL and create new URL object
+              const currentUrl = new URL(window.location.href);
+              // Remove any existing patient_id parameter
+              currentUrl.searchParams.delete('patient_id');
+              // Add the new patient_id
+              currentUrl.searchParams.set('patient_id', selectedPatientId);
+              window.location.href = currentUrl.toString();
+            } else {
+              localStorage.removeItem('selectedPatientId');
+              // Redirect to dashboard if no patient is selected
+              window.location.href = "{{ url_for('dashboard') }}";
+            }
+          });
         }
       });
     </script>
