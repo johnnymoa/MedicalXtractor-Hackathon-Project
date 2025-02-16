@@ -220,14 +220,44 @@ gunicorn -w 4 -b 0.0.0.0:8000 app:app
 
 1. Build the Docker image:
 ```bash
-docker build -t medical-doc-system .
+docker build --no-cache --platform=linux/amd64 -t rg.fr-par.scw.cloud/your-namespace-name/your-app-name .
 ```
 
-2. Run the container:
+2. Push to Scaleway Registry:
 ```bash
-docker run -p 8000:8000 medical-doc-system
+# Push the image to Scaleway Container Registry
+docker push rg.fr-par.scw.cloud/your-namespace-name/your-app-name
 ```
 
+3. Connect to the scalway ssh instance 
+```bash
+ssh -J bastion@51.159.179.172:61000 root@172.16.0.3
+```
+
+4. Pull the container
+```bash
+docker pull rg.fr-par.scw.cloud/your-namespace-name/your-app-name:latest
+```
+
+5. Run the container
+```bash
+docker run -p 5000:8080 -e DATABASE_URL=sqlite:///app.db -d rg.fr-par.scw.cloud/your-namespace-name/your-app-name:latest 
+```
+
+6. Check the container status
+```bash
+docker ps
+```
+
+7. Access the container shell
+```bash
+docker exec -it xxxxx bash
+```
+
+8. Run init_db.py
+```bash
+python init_db.py
+```
 ## Security
 
 - All routes require authentication
