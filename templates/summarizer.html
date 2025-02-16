@@ -279,7 +279,6 @@
 <script>
     let extractionsData = [];
     let tableSort = { column: 'category', direction: 'asc' };  // Changed to ascending
-    let reportSort = { column: 'category', direction: 'asc' };  // Changed to ascending
     let currentFilter = 'all';
     let currentDocumentId = null;
     let categories = new Set();
@@ -951,58 +950,73 @@
         const reportContainer = document.getElementById('reportView');
         reportContainer.innerHTML = ''; // Clear existing content
 
-        // Process each category
-        for (const [categoryKey, categoryData] of Object.entries(templateData)) {
-            const categoryElement = document.createElement('div');
-            categoryElement.className = 'card mb-4';
-            
-            // Create category header
-            categoryElement.innerHTML = `
-                <div class="card-header">
-                    <h3>${categoryKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h3>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        ${categoryData.fields.map(field => {
-                            const values = getLatestValues(categoryKey, field.Field);
-                            const latestValue = values[0];
-                            const showHistory = categoryData.report_style === 'history';
-                            const displayValues = showHistory ? values.slice(0, 3) : [latestValue];
-                            const historyKey = storeHistoryData(field.Field, values);
-                            
-                            return `
-                                <div class="col-12 mb-3">
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <div class="flex-grow-1">
-                                            <strong>${field.Field}:</strong>
-                                            ${!values.length ? 
-                                                '<span class="text-muted">No data available</span>' :
-                                                displayValues.map(v => `
-                                                    <div class="mt-2">
-                                                        <div>${formatValue(v.value, field.Field)}</div>
-                                                        ${v.associated_date ? 
-                                                            `<small class="text-muted">(${v.associated_date})</small>` : 
-                                                            ''}
-                                                    </div>
-                                                `).join('<hr class="my-2">')
-                                            }
-                                        </div>
-                                        ${values.length > (showHistory ? 3 : 1) ? `
-                                            <button class="btn btn-sm btn-outline-primary ml-3"
-                                                    onclick="showHistory('${field.Field}', '${historyKey}')">
-                                                View History
-                                            </button>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
+        // Define the desired category order
+        const categoryOrder = [
+            'patient_demographics',
+            'medical_history',
+            'vital_signs',
+            'laboratory_results',
+            'medications',
+            'allergies',
+            'procedures',
+            'diagnoses'
+        ];
+
+        // Process categories in the defined order
+        categoryOrder.forEach(categoryKey => {
+            if (templateData[categoryKey]) {
+                const categoryData = templateData[categoryKey];
+                const categoryElement = document.createElement('div');
+                categoryElement.className = 'card mb-4';
+                
+                // Create category header
+                categoryElement.innerHTML = `
+                    <div class="card-header">
+                        <h3>${categoryKey.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</h3>
                     </div>
-                </div>
-            `;
-            
-            reportContainer.appendChild(categoryElement);
-        }
+                    <div class="card-body">
+                        <div class="row">
+                            ${categoryData.fields.map(field => {
+                                const values = getLatestValues(categoryKey, field.Field);
+                                const latestValue = values[0];
+                                const showHistory = categoryData.report_style === 'history';
+                                const displayValues = showHistory ? values.slice(0, 3) : [latestValue];
+                                const historyKey = storeHistoryData(field.Field, values);
+                                
+                                return `
+                                    <div class="col-12 mb-3">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <strong>${field.Field}:</strong>
+                                                ${!values.length ? 
+                                                    '<span class="text-muted">No data available</span>' :
+                                                    displayValues.map(v => `
+                                                        <div class="mt-2">
+                                                            <div>${formatValue(v.value, field.Field)}</div>
+                                                            ${v.associated_date ? 
+                                                                `<small class="text-muted">(${v.associated_date})</small>` : 
+                                                                ''}
+                                                        </div>
+                                                    `).join('<hr class="my-2">')
+                                                }
+                                            </div>
+                                            ${values.length > (showHistory ? 3 : 1) ? `
+                                                <button class="btn btn-sm btn-outline-primary ml-3"
+                                                        onclick="showHistory('${field.Field}', '${historyKey}')">
+                                                    View History
+                                                </button>
+                                            ` : ''}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                reportContainer.appendChild(categoryElement);
+            }
+        });
     }
 
     // New function to show history
@@ -1049,14 +1063,15 @@
         createModal(`History for ${fieldName}`, modalContent);
     }
 
-    // Update the getLatestValues function to use reportSort for report view
+    // Update the getLatestValues function to use descending order by default for report view
     function getLatestValues(category, field, limit = null) {
         const values = extractionsData
             .filter(ext => ext.category === category && ext.field === field)
             .sort((a, b) => {
                 const dateA = a.associated_date ? new Date(a.associated_date) : new Date(0);
                 const dateB = b.associated_date ? new Date(b.associated_date) : new Date(0);
-                return reportSort.direction === 'asc' ? dateA - dateB : dateB - dateA;
+                // Always sort by descending order (newest first) for report view
+                return dateB - dateA;
             });
         
         return limit ? values.slice(0, limit) : values;
