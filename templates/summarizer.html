@@ -505,7 +505,13 @@
             const docData = await docResponse.json();
             
             // Update extractions data and current document ID
-            extractionsData = data.extractions.filter(ext => ext.page_number != null);
+            extractionsData = data.extractions
+                .filter(ext => ext.page_number != null)
+                .map(ext => ({
+                    ...ext,
+                    document_id: docId,
+                    document_name: docData.filename
+                }));
             currentDocumentId = docId;
             
             // Update categories
@@ -809,14 +815,14 @@
             const url = `/api/documents/${documentId}/pages/${pageNumber}/image` + (patientId ? `?patient_id=${patientId}` : '');
             
             // First verify the image URL is accessible
-            const response = await fetch(`/api/documents/${documentId}/pages/${pageNumber}/image`);
+            const response = await fetch(url);
             if (!response.ok) {
                 throw new Error('Failed to load page image');
             }
             
             const content = `
                 <div style="text-align: center;">
-                    <img src="/api/documents/${documentId}/pages/${pageNumber}/image" 
+                    <img src="${url}" 
                          class="img-fluid" 
                          alt="Page ${pageNumber}"
                          style="max-width: 100%; height: auto;">
@@ -883,11 +889,13 @@
                     
                     if (data.extractions) {
                         // Add document information to each extraction
-                        const enhancedExtractions = data.extractions.map(ext => ({
-                            ...ext,
-                            document_name: doc.filename,
-                            document_id: doc.id
-                        }));
+                        const enhancedExtractions = data.extractions
+                            .filter(ext => ext.page_number != null)
+                            .map(ext => ({
+                                ...ext,
+                                document_name: doc.filename,
+                                document_id: doc.id  // ensure it's set
+                            }));
                         allExtractions = allExtractions.concat(enhancedExtractions);
                     }
                 } catch (error) {
@@ -1071,7 +1079,7 @@
                                 <td>${v.associated_date || 'Not specified'}</td>
                                 <td>${v.document_name || 'Not specified'}</td>
                                 <td>
-                                    <button class="btn btn-sm btn-primary" 
+                                    <button class="btn btn-sm btn-primary"
                                             onclick="viewPage(${v.document_id}, ${v.page_number})">
                                         View Page
                                     </button>
